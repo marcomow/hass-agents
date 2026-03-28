@@ -1,6 +1,6 @@
 # Hass Agents
 
-A collection of Home Assistant add-ons that bring AI agents to your smart home, installable via [HACS](https://hacs.xyz).
+A collection of Home Assistant add-ons that bring AI agents to your smart home.
 
 ## Add-ons
 
@@ -10,16 +10,17 @@ An ultra-lightweight personal AI agent with multi-channel support. Connect it to
 
 ## Installation
 
-### 1. Add this repository to HACS
+### 1. Add this repository to the Add-on Store
 
-1. In Home Assistant, open **HACS → ⋮ → Custom repositories**
-2. Enter `https://github.com/marcomow/hass-agents` and select category **Add-ons**
-3. Click **Add**
+1. In Home Assistant, go to **Settings → Add-ons → Add-on Store**
+2. Click **⋮ → Repositories** (top-right menu)
+3. Enter `https://github.com/marcomow/hass-agents` and click **Add**
+4. Close the dialog — the **AI Agents** add-on will appear in the store
 
 ### 2. Install the add-on
 
-1. Go to **Settings → Add-ons → Add-on Store**
-2. Find **AI Agents** and click **Install**
+1. Find **AI Agents** in the Add-on Store and click it
+2. Click **Install**
 
 ### 3. Configure
 
