@@ -122,17 +122,18 @@ for idx, agent_opts in enumerate(agents):
             command = (server.get("command") or "").strip()
             if command:
                 srv["command"] = command
-            args = [a.strip() for a in (server.get("args") or []) if (a or "").strip()]
+            raw_args = (server.get("args") or "").strip()
+            args = [a for a in raw_args.split() if a]
             if args:
                 srv["args"] = args
             url = (server.get("url") or "").strip()
             if url:
                 srv["url"] = url
-            raw_headers = server.get("headers") or []
-            headers = {h["key"]: h["value"] for h in raw_headers if (h.get("key") or "").strip()}
-            if headers:
-                srv["headers"] = headers
-            enabled_tools = [t.strip() for t in (server.get("enabled_tools") or []) if (t or "").strip()]
+            api_key = (server.get("api_key") or "").strip()
+            if api_key:
+                srv["headers"] = {"Authorization": f"Bearer {api_key}"}
+            raw_tools = (server.get("enabled_tools") or "").strip()
+            enabled_tools = [t.strip() for t in raw_tools.split(",") if t.strip()]
             if enabled_tools:
                 srv["enabledTools"] = enabled_tools
             tool_timeout = server.get("tool_timeout")

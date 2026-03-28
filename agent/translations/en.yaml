@@ -71,6 +71,44 @@ configuration:
     description: >-
       Slack App-level token (xapp-...) for Socket Mode for this agent.
       Required together with the Bot Token to enable the Slack channel.
+  agents_mcp_servers:
+    name: MCP Servers
+    description: >-
+      Optional list of MCP (Model Context Protocol) servers to connect to.
+      Each server exposes additional tools to the agent.
+  agents_mcp_servers_name:
+    name: Server Name
+    description: >-
+      Unique identifier for this MCP server (e.g. "filesystem", "github").
+  agents_mcp_servers_command:
+    name: Command
+    description: >-
+      Executable for stdio transport (e.g. npx, uvx, python).
+      Required when connecting to a local MCP server process.
+  agents_mcp_servers_args:
+    name: Arguments
+    description: >-
+      Space-separated arguments passed to the command
+      (e.g. "-y @modelcontextprotocol/server-filesystem /config").
+  agents_mcp_servers_url:
+    name: URL
+    description: >-
+      HTTP/SSE endpoint for a remote MCP server
+      (e.g. https://api.example.com/mcp/). Required for remote servers.
+  agents_mcp_servers_api_key:
+    name: API Key / Token
+    description: >-
+      Authentication token sent as "Authorization: Bearer <token>".
+      Leave empty for servers that do not require authentication.
+  agents_mcp_servers_enabled_tools:
+    name: Enabled Tools
+    description: >-
+      Comma-separated list of tool names to expose (e.g. "get_issue,create_issue").
+      Leave empty to enable all tools provided by the server.
+  agents_mcp_servers_tool_timeout:
+    name: Tool Timeout (seconds)
+    description: >-
+      Per-call timeout in seconds for tools on this server. Defaults to 30.
 
 
 
