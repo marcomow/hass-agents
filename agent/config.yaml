@@ -1,5 +1,5 @@
 name: "AI Agents"
-version: "0.2.0"
+version: "0.3.0"
 slug: agent
 description: >-
   Ultra-lightweight personal AI agents with multi-channel support (Telegram,
@@ -31,6 +31,8 @@ options:
       api_key: ""
       model: "openrouter/auto"
       api_base: ""
+      groq_api_key: ""
+      system_prompt: ""
       telegram_token: ""
       telegram_allow_from: []
       discord_token: ""
@@ -47,6 +49,8 @@ schema:
       api_key: "password?"
       model: str
       api_base: "str?"
+      groq_api_key: "password?"
+      system_prompt: "str?"
       telegram_token: "password?"
       telegram_allow_from:
         - str

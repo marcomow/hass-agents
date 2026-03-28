@@ -40,10 +40,12 @@ for idx, agent_opts in enumerate(agents):
     os.makedirs(config_dir, exist_ok=True)
     os.makedirs(workspace,  exist_ok=True)
 
-    provider = agent_opts.get("provider", "openai").strip()
-    api_key  = agent_opts.get("api_key",  "").strip()
-    model    = agent_opts.get("model",    "gpt-4o-mini").strip()
-    api_base = agent_opts.get("api_base", "").strip()
+    provider      = agent_opts.get("provider",     "openai").strip()
+    api_key       = agent_opts.get("api_key",      "").strip()
+    model         = agent_opts.get("model",        "gpt-4o-mini").strip()
+    api_base      = agent_opts.get("api_base",     "").strip()
+    groq_api_key  = agent_opts.get("groq_api_key", "").strip()
+    system_prompt = agent_opts.get("system_prompt","").strip()
 
     config = {
         "providers": {},
@@ -66,6 +68,10 @@ for idx, agent_opts in enumerate(agents):
     if api_base:
         provider_cfg["apiBase"] = api_base
     config["providers"][provider] = provider_cfg
+
+    # Groq (optional — enables voice transcription via Whisper on Telegram, plus Groq LLM models)
+    if groq_api_key:
+        config["providers"]["groq"] = {"apiKey": groq_api_key}
 
     # Telegram
     telegram_token = agent_opts.get("telegram_token", "").strip()
@@ -107,6 +113,15 @@ for idx, agent_opts in enumerate(agents):
     config_path = os.path.join(config_dir, "config.json")
     with open(config_path, "w") as f:
         json.dump(config, f, indent=2)
+
+    # Write system prompt to SOUL.md in the workspace (loaded as part of every system prompt)
+    soul_path = os.path.join(workspace, "SOUL.md")
+    if system_prompt:
+        with open(soul_path, "w") as f:
+            f.write(system_prompt)
+        print(f"[agent:{name}] System prompt written → {soul_path}")
+    elif os.path.exists(soul_path):
+        os.remove(soul_path)
 
     channels_enabled = list(config["channels"].keys())
     print(f"[agent:{name}] Config written → {config_path}  (port {port})")
