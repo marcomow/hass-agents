@@ -110,9 +110,16 @@ for idx, agent_opts in enumerate(agents):
             search_cfg["apiKey"] = search_api_key
         config["tools"] = {"web": {"search": search_cfg}}
 
-    # MCP servers
-    mcp_servers = agent_opts.get("mcp_servers", [])
-    if mcp_servers:
+    # MCP servers (JSON string field to avoid HA nested-list UI bug)
+    mcp_servers_json = (agent_opts.get("mcp_servers_json") or "").strip()
+    if mcp_servers_json:
+        try:
+            mcp_servers = json.loads(mcp_servers_json)
+            if not isinstance(mcp_servers, list):
+                mcp_servers = [mcp_servers]
+        except json.JSONDecodeError as e:
+            print(f"[agent:{name}] WARNING: Invalid mcp_servers_json: {e}", file=sys.stderr)
+            mcp_servers = []
         mcp_cfg = {}
         for server in mcp_servers:
             srv_name = (server.get("name") or "").strip()
@@ -129,9 +136,9 @@ for idx, agent_opts in enumerate(agents):
             url = (server.get("url") or "").strip()
             if url:
                 srv["url"] = url
-            api_key = (server.get("api_key") or "").strip()
-            if api_key:
-                srv["headers"] = {"Authorization": f"Bearer {api_key}"}
+            api_key_mcp = (server.get("api_key") or "").strip()
+            if api_key_mcp:
+                srv["headers"] = {"Authorization": f"Bearer {api_key_mcp}"}
             raw_tools = (server.get("enabled_tools") or "").strip()
             enabled_tools = [t.strip() for t in raw_tools.split(",") if t.strip()]
             if enabled_tools:

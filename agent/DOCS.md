@@ -32,20 +32,20 @@ You can define **multiple independent agent instances**, each with its own model
 | `discord_token` | No | *(empty)* | Discord bot token |
 | `slack_bot_token` | No | *(empty)* | Slack Bot OAuth token (`xoxb-…`) |
 | `slack_app_token` | No | *(empty)* | Slack App-level token (`xapp-…`) |
-| `mcp_servers` | No | *(empty list)* | List of MCP (Model Context Protocol) servers to connect to |
+| `mcp_servers_json` | No | *(empty)* | JSON array of MCP server objects (see below) |
 
-#### MCP server options
+#### MCP server JSON format
 
-Each entry in `mcp_servers` supports the following fields:
+The `mcp_servers_json` field accepts a JSON array of server objects. Each object supports:
 
-| Option | Required | Description |
+| Field | Required | Description |
 |---|---|---|
 | `name` | Yes | Unique identifier for this MCP server |
 | `command` | No* | Executable to run (for stdio transport, e.g. `npx`, `uvx`) |
-| `args` | No | Command arguments for stdio transport |
+| `args` | No | Space-separated command arguments for stdio transport |
 | `url` | No* | HTTP/SSE endpoint URL (for remote MCP servers) |
-| `headers` | No | List of `{key, value}` HTTP headers (e.g. `Authorization`) |
-| `enabled_tools` | No | Subset of tools to register — omit or use `["*"]` for all |
+| `api_key` | No | Bearer token for authentication |
+| `enabled_tools` | No | Comma-separated list of tools to register — omit for all |
 | `tool_timeout` | No | Per-call timeout in seconds (default: 30) |
 
 \* Either `command` (stdio) or `url` (HTTP) is required.
@@ -111,30 +111,12 @@ agents:
     api_key: sk-...
     model: gpt-4o-mini
     telegram_token: "123456:ABC..."
-    mcp_servers:
-      # Stdio transport (local process)
-      - name: filesystem
-        command: npx
-        args:
-          - "-y"
-          - "@modelcontextprotocol/server-filesystem"
-          - "/config"
-      # HTTP/SSE transport (remote server)
-      - name: my-remote-mcp
-        url: "https://example.com/mcp/"
-        headers:
-          - key: Authorization
-            value: "Bearer my-secret-token"
-        tool_timeout: 60
-      # With tool filtering
-      - name: github
-        url: "https://api.githubcopilot.com/mcp/"
-        headers:
-          - key: Authorization
-            value: "Bearer ghp_..."
-        enabled_tools:
-          - get_issue
-          - create_issue
+    mcp_servers_json: >-
+      [
+        {"name": "filesystem", "command": "npx", "args": "-y @modelcontextprotocol/server-filesystem /config"},
+        {"name": "my-remote-mcp", "url": "https://example.com/mcp/", "api_key": "my-secret-token", "tool_timeout": 60},
+        {"name": "github", "url": "https://api.githubcopilot.com/mcp/", "api_key": "ghp_...", "enabled_tools": "get_issue,create_issue"}
+      ]
 ```
 
 ---

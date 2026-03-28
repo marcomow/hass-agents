@@ -1,5 +1,5 @@
 name: "AI Agents"
-version: "0.4.1"
+version: "0.4.2"
 slug: agent
 description: >-
   Ultra-lightweight personal AI agents with multi-channel support (Telegram,
@@ -38,7 +38,7 @@ options:
       discord_token: ""
       slack_bot_token: ""
       slack_app_token: ""
-      mcp_servers: []
+      mcp_servers_json: ""
 
 schema:
   timezone: str
@@ -58,12 +58,5 @@ schema:
       discord_token: "password?"
       slack_bot_token: "password?"
       slack_app_token: "password?"
-      mcp_servers:
-        - name: str
-          command: "str?"
-          args: "str?"
-          url: "str?"
-          api_key: "password?"
-          enabled_tools: "str?"
-          tool_timeout: "int?"
+      mcp_servers_json: "str?"
 
