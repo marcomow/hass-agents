@@ -110,6 +110,40 @@ for idx, agent_opts in enumerate(agents):
             search_cfg["apiKey"] = search_api_key
         config["tools"] = {"web": {"search": search_cfg}}
 
+    # MCP servers
+    mcp_servers = agent_opts.get("mcp_servers", [])
+    if mcp_servers:
+        mcp_cfg = {}
+        for server in mcp_servers:
+            srv_name = (server.get("name") or "").strip()
+            if not srv_name:
+                continue
+            srv = {}
+            command = (server.get("command") or "").strip()
+            if command:
+                srv["command"] = command
+            args = [a.strip() for a in (server.get("args") or []) if (a or "").strip()]
+            if args:
+                srv["args"] = args
+            url = (server.get("url") or "").strip()
+            if url:
+                srv["url"] = url
+            raw_headers = server.get("headers") or []
+            headers = {h["key"]: h["value"] for h in raw_headers if (h.get("key") or "").strip()}
+            if headers:
+                srv["headers"] = headers
+            enabled_tools = [t.strip() for t in (server.get("enabled_tools") or []) if (t or "").strip()]
+            if enabled_tools:
+                srv["enabledTools"] = enabled_tools
+            tool_timeout = server.get("tool_timeout")
+            if tool_timeout:
+                srv["toolTimeout"] = int(tool_timeout)
+            mcp_cfg[srv_name] = srv
+        if mcp_cfg:
+            if "tools" not in config:
+                config["tools"] = {}
+            config["tools"]["mcpServers"] = mcp_cfg
+
     config_path = os.path.join(config_dir, "config.json")
     with open(config_path, "w") as f:
         json.dump(config, f, indent=2)

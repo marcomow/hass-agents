@@ -32,6 +32,23 @@ You can define **multiple independent agent instances**, each with its own model
 | `discord_token` | No | *(empty)* | Discord bot token |
 | `slack_bot_token` | No | *(empty)* | Slack Bot OAuth token (`xoxb-…`) |
 | `slack_app_token` | No | *(empty)* | Slack App-level token (`xapp-…`) |
+| `mcp_servers` | No | *(empty list)* | List of MCP (Model Context Protocol) servers to connect to |
+
+#### MCP server options
+
+Each entry in `mcp_servers` supports the following fields:
+
+| Option | Required | Description |
+|---|---|---|
+| `name` | Yes | Unique identifier for this MCP server |
+| `command` | No* | Executable to run (for stdio transport, e.g. `npx`, `uvx`) |
+| `args` | No | Command arguments for stdio transport |
+| `url` | No* | HTTP/SSE endpoint URL (for remote MCP servers) |
+| `headers` | No | List of `{key, value}` HTTP headers (e.g. `Authorization`) |
+| `enabled_tools` | No | Subset of tools to register — omit or use `["*"]` for all |
+| `tool_timeout` | No | Per-call timeout in seconds (default: 30) |
+
+\* Either `command` (stdio) or `url` (HTTP) is required.
 
 ---
 
@@ -81,6 +98,43 @@ The agent gateway UI is available at:
 
 ```
 http://<your-ha-ip>:18790
+```
+
+---
+
+## MCP servers example
+
+```yaml
+agents:
+  - name: home-assistant
+    provider: openai
+    api_key: sk-...
+    model: gpt-4o-mini
+    telegram_token: "123456:ABC..."
+    mcp_servers:
+      # Stdio transport (local process)
+      - name: filesystem
+        command: npx
+        args:
+          - "-y"
+          - "@modelcontextprotocol/server-filesystem"
+          - "/config"
+      # HTTP/SSE transport (remote server)
+      - name: my-remote-mcp
+        url: "https://example.com/mcp/"
+        headers:
+          - key: Authorization
+            value: "Bearer my-secret-token"
+        tool_timeout: 60
+      # With tool filtering
+      - name: github
+        url: "https://api.githubcopilot.com/mcp/"
+        headers:
+          - key: Authorization
+            value: "Bearer ghp_..."
+        enabled_tools:
+          - get_issue
+          - create_issue
 ```
 
 ---
