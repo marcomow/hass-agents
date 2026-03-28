@@ -1,65 +1,76 @@
 configuration:
-  provider:
-    name: LLM Provider
-    description: >-
-      Name of the AI provider to use. Examples: openai, anthropic, deepseek,
-      ollama, openrouter. Any OpenAI-compatible provider name is accepted.
-  api_key:
-    name: API Key
-    description: >-
-      API key for the selected provider. Leave empty for local servers
-      (e.g. Ollama) that do not require authentication.
-  model:
-    name: Model Name
-    description: >-
-      Model to use. Examples: openrouter/auto, gpt-4o-mini, claude-sonnet-4-6,
-      deepseek-chat, llama3.2 (for Ollama).
-  api_base:
-    name: Custom API Base URL
-    description: >-
-      Override the provider's default API base URL. Useful for local or
-      self-hosted OpenAI-compatible servers (e.g. http://192.168.1.10:11434
-      for Ollama). Leave empty to use the provider default.
   timezone:
     name: Timezone
     description: >-
-      IANA timezone name used for scheduling and time context given to the
-      agent. Examples: UTC, America/New_York, Europe/Berlin, Asia/Tokyo.
-  telegram_token:
-    name: Telegram Bot Token
-    description: >-
-      Bot token from @BotFather. Leave empty to disable the Telegram channel.
-  telegram_allow_from:
-    name: Telegram Allowed User IDs
-    description: >-
-      List of Telegram numeric user IDs allowed to chat with the bot.
-      Leave empty to allow all users. Find your ID via @userinfobot.
-  discord_token:
-    name: Discord Bot Token
-    description: >-
-      Discord bot token from the Discord Developer Portal.
-      Leave empty to disable the Discord channel.
-  slack_bot_token:
-    name: Slack Bot Token
-    description: >-
-      Slack Bot OAuth token (xoxb-...). Both Bot Token and App Token are
-      required to enable the Slack channel.
-  slack_app_token:
-    name: Slack App Token
-    description: >-
-      Slack App-level token (xapp-...) for Socket Mode. Required together
-      with the Bot Token to enable the Slack channel.
+      IANA timezone name shared by all agents for scheduling and time context.
+      Examples: UTC, America/New_York, Europe/Berlin, Asia/Tokyo.
   web_search_provider:
     name: Web Search Provider
     description: >-
-      Search backend used by the agent. Options: brave, tavily, jina,
+      Search backend shared by all agents. Options: brave, tavily, jina,
       searxng, duckduckgo. Defaults to duckduckgo (no API key required).
   web_search_api_key:
     name: Web Search API Key
     description: >-
       API key for the chosen search provider (Brave, Tavily, or Jina).
       Not required for duckduckgo or searxng.
+  agents:
+    name: Agents
+    description: >-
+      List of agent instances. Each agent runs independently with its own
+      model, provider, channels, and gateway port (18790, 18791, …).
+      Up to 5 agents are supported.
+  agents_name:
+    name: Agent Name
+    description: >-
+      Unique name for this agent (e.g. "assistant", "coder", "home").
+      Used to identify the instance and name its workspace directory.
+  agents_provider:
+    name: LLM Provider
+    description: >-
+      AI provider for this agent. Examples: openai, anthropic, deepseek,
+      ollama, openrouter. Any OpenAI-compatible provider name is accepted.
+  agents_api_key:
+    name: API Key
+    description: >-
+      API key for this agent's provider. Leave empty for local servers
+      (e.g. Ollama) that do not require authentication.
+  agents_model:
+    name: Model Name
+    description: >-
+      Model for this agent. Examples: openrouter/auto, gpt-4o-mini,
+      claude-sonnet-4-6, deepseek-chat, llama3.2 (for Ollama).
+  agents_api_base:
+    name: Custom API Base URL
+    description: >-
+      Override the provider's default API base URL. Useful for local or
+      self-hosted OpenAI-compatible servers (e.g. http://192.168.1.10:11434
+      for Ollama). Leave empty to use the provider default.
+  agents_telegram_token:
+    name: Telegram Bot Token
+    description: >-
+      Bot token from @BotFather for this agent. Leave empty to disable
+      the Telegram channel for this agent.
+  agents_telegram_allow_from:
+    name: Telegram Allowed User IDs
+    description: >-
+      List of Telegram numeric user IDs allowed to chat with this agent's bot.
+      Leave empty to allow all users. Find your ID via @userinfobot.
+  agents_discord_token:
+    name: Discord Bot Token
+    description: >-
+      Discord bot token from the Discord Developer Portal for this agent.
+      Leave empty to disable the Discord channel for this agent.
+  agents_slack_bot_token:
+    name: Slack Bot Token
+    description: >-
+      Slack Bot OAuth token (xoxb-...) for this agent. Both Bot Token and
+      App Token are required to enable the Slack channel.
+  agents_slack_app_token:
+    name: Slack App Token
+    description: >-
+      Slack App-level token (xapp-...) for Socket Mode for this agent.
+      Required together with the Bot Token to enable the Slack channel.
 
-network:
-  18790/tcp: Agent gateway API port
+
 
