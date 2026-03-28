@@ -1,0 +1,56 @@
+name: "AI Agents"
+version: "0.1.4.post6"
+slug: agent
+description: >-
+  Ultra-lightweight personal AI agents with multi-channel support (Telegram,
+  Discord, Slack). Powered by github.com/HKUDS/nanobot. Supports OpenAI,
+  Anthropic, DeepSeek, Ollama, and any OpenAI-compatible provider.
+url: "https://github.com/marcomow/hass-agents"
+arch:
+  - amd64
+  - aarch64
+startup: application
+boot: auto
+init: false
+
+ports:
+  18790/tcp: 18790
+ports_description:
+  18790/tcp: "Agent gateway API"
+
+map:
+  - type: data
+    read_only: false
+
+panel_icon: mdi:robot
+panel_title: AI Agent
+
+options:
+  provider: "openrouter"
+  api_key: ""
+  model: "openrouter/auto"
+  api_base: ""
+  timezone: "UTC"
+  telegram_token: ""
+  telegram_allow_from: []
+  discord_token: ""
+  slack_bot_token: ""
+  slack_app_token: ""
+  web_search_provider: "duckduckgo"
+  web_search_api_key: ""
+
+schema:
+  provider: str
+  api_key: "password?"
+  model: str
+  api_base: "str?"
+  timezone: str
+  telegram_token: "password?"
+  telegram_allow_from:
+    - str
+  discord_token: "password?"
+  slack_bot_token: "password?"
+  slack_app_token: "password?"
+  web_search_provider: "str?"
+  web_search_api_key: "password?"
+

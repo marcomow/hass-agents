@@ -1,0 +1,65 @@
+configuration:
+  provider:
+    name: LLM Provider
+    description: >-
+      Name of the AI provider to use. Examples: openai, anthropic, deepseek,
+      ollama, openrouter. Any OpenAI-compatible provider name is accepted.
+  api_key:
+    name: API Key
+    description: >-
+      API key for the selected provider. Leave empty for local servers
+      (e.g. Ollama) that do not require authentication.
+  model:
+    name: Model Name
+    description: >-
+      Model to use. Examples: openrouter/auto, gpt-4o-mini, claude-sonnet-4-6,
+      deepseek-chat, llama3.2 (for Ollama).
+  api_base:
+    name: Custom API Base URL
+    description: >-
+      Override the provider's default API base URL. Useful for local or
+      self-hosted OpenAI-compatible servers (e.g. http://192.168.1.10:11434
+      for Ollama). Leave empty to use the provider default.
+  timezone:
+    name: Timezone
+    description: >-
+      IANA timezone name used for scheduling and time context given to the
+      agent. Examples: UTC, America/New_York, Europe/Berlin, Asia/Tokyo.
+  telegram_token:
+    name: Telegram Bot Token
+    description: >-
+      Bot token from @BotFather. Leave empty to disable the Telegram channel.
+  telegram_allow_from:
+    name: Telegram Allowed User IDs
+    description: >-
+      List of Telegram numeric user IDs allowed to chat with the bot.
+      Leave empty to allow all users. Find your ID via @userinfobot.
+  discord_token:
+    name: Discord Bot Token
+    description: >-
+      Discord bot token from the Discord Developer Portal.
+      Leave empty to disable the Discord channel.
+  slack_bot_token:
+    name: Slack Bot Token
+    description: >-
+      Slack Bot OAuth token (xoxb-...). Both Bot Token and App Token are
+      required to enable the Slack channel.
+  slack_app_token:
+    name: Slack App Token
+    description: >-
+      Slack App-level token (xapp-...) for Socket Mode. Required together
+      with the Bot Token to enable the Slack channel.
+  web_search_provider:
+    name: Web Search Provider
+    description: >-
+      Search backend used by the agent. Options: brave, tavily, jina,
+      searxng, duckduckgo. Defaults to duckduckgo (no API key required).
+  web_search_api_key:
+    name: Web Search API Key
+    description: >-
+      API key for the chosen search provider (Brave, Tavily, or Jina).
+      Not required for duckduckgo or searxng.
+
+network:
+  18790/tcp: Agent gateway API port
+
