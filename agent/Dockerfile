@@ -12,7 +12,7 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Install the agent package
-RUN uv pip install --system --no-cache nanobot-ai
+RUN uv pip install --system --no-cache nanobot-ai==0.1.5.post1
 
 # Ensure the agent config directory exists
 RUN mkdir -p /root/.nanobot
@@ -22,7 +22,7 @@ COPY run.sh /run.sh
 RUN chmod a+x /run.sh
 
 LABEL \
-    io.hass.version="0.1.4.post6" \
+    io.hass.version="0.1.5.post1" \
     io.hass.type="addon" \
     io.hass.arch="aarch64|amd64"
 
