@@ -31,8 +31,10 @@ global_mcp_servers = []
 # unless an explicit url/token override is given.
 ha_opts = opts.get("home_assistant") or {}
 if ha_opts.get("enabled"):
-    ha_url   = (ha_opts.get("url")   or "").strip() or "http://supervisor/core/mcp_server/sse"
+    ha_url   = (ha_opts.get("url")   or "").strip() or "http://supervisor/core"
     ha_token = (ha_opts.get("token") or "").strip() or os.environ.get("SUPERVISOR_TOKEN", "")
+    if "/mcp_server/sse" not in ha_url:
+        ha_url = ha_url.rstrip("/") + "/mcp_server/sse"
     if not ha_token:
         print("[agent] WARNING: Home Assistant integration enabled but no token "
               "is available (SUPERVISOR_TOKEN missing and no override set).",
