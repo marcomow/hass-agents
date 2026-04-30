@@ -44,11 +44,13 @@ if ha_opts.get("enabled"):
               file=sys.stderr)
     else:
         # Pre-flight: verify the HA MCP endpoint is reachable before writing config.
+        ha_token_ok = True
         try:
             req = urllib.request.Request(ha_url, headers={"Authorization": f"Bearer {ha_token}"})
             urllib.request.urlopen(req, timeout=5)
         except urllib.error.HTTPError as e:
             if e.code in (401, 403):
+                ha_token_ok = False
                 print(f"[agent] WARNING: HA MCP server returned HTTP {e.code} — token rejected. "
                       "The Supervisor token does not have access to the MCP Server integration. "
                       "Create a Long-Lived Access Token in HA (Profile → Security → "
@@ -64,12 +66,13 @@ if ha_opts.get("enabled"):
         except OSError as e:
             print(f"[agent] WARNING: Cannot reach HA MCP server at {ha_url} — {e}.",
                   file=sys.stderr)
-        global_mcp_servers.append({
-            "name":    "home_assistant",
-            "url":     ha_url,
-            "api_key": ha_token,
-        })
-        print(f"[agent] Home Assistant MCP server enabled → {ha_url}")
+        if ha_token_ok:
+            global_mcp_servers.append({
+                "name":    "home_assistant",
+                "url":     ha_url,
+                "api_key": ha_token,
+            })
+            print(f"[agent] Home Assistant MCP server enabled → {ha_url}")
 
 for i, entry in enumerate(opts.get("mcp_servers", [])):
     if not isinstance(entry, dict):
