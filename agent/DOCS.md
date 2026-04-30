@@ -15,6 +15,34 @@ Powered by [nanobot](https://github.com/HKUDS/nanobot).
 | `timezone` | Yes | `UTC` | IANA timezone string (e.g. `Europe/Berlin`) |
 | `web_search_provider` | No | `duckduckgo` | Web search backend: `duckduckgo`, `brave`, `tavily`, `jina`, `searxng` |
 | `web_search_api_key` | No | *(empty)* | API key for Brave, Tavily, or Jina search providers |
+| `home_assistant.enabled` | No | `false` | Expose Home Assistant's built-in MCP Server to all agents |
+| `home_assistant.url` | No | *(supervisor)* | Override the HA MCP endpoint (default `http://supervisor/core/mcp_server/sse`) |
+| `home_assistant.token` | No | *(supervisor token)* | Override the HA token (defaults to the add-on's Supervisor token) |
+
+### Home Assistant integration
+
+Disabled by default. When enabled, the add-on injects an MCP server named
+`home_assistant` into every agent, letting them call Home Assistant tools
+(turn on lights, query sensors, run scripts, etc.) using HA's built-in MCP
+Server.
+
+**Prerequisites:**
+
+1. In Home Assistant, go to **Settings → Devices & Services → Add Integration**
+   and add **"Model Context Protocol Server"**.
+2. Configure which entities to expose to the MCP server (typically via the
+   Assist exposed-entities settings).
+3. In this add-on, set `home_assistant.enabled: true` and restart.
+
+The add-on talks to HA through the Supervisor proxy
+(`http://supervisor/core`) using the Supervisor token that Home Assistant
+provides automatically — no manual token setup is needed for the local case.
+To restrict the integration to specific agents, list them in each agent's
+**Active MCP Servers** field (the server name is `home_assistant`).
+
+> Note: this is the *outbound* direction (agents → HA). It is unrelated to
+> Home Assistant ingress, which is the *inbound* direction (HA embedding the
+> add-on's UI in the dashboard).
 
 ### MCP Servers
 

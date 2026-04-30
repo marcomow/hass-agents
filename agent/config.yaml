@@ -1,5 +1,5 @@
 name: "AI Agents"
-version: "0.5.5"
+version: "0.5.6"
 slug: agent
 description: >-
   Ultra-lightweight personal AI agents with multi-channel support (Telegram,
@@ -13,6 +13,7 @@ arch:
 startup: application
 boot: auto
 init: false
+homeassistant_api: true
 
 map:
   - type: data
@@ -25,6 +26,10 @@ options:
   timezone: "UTC"
   web_search_provider: "duckduckgo"
   web_search_api_key: ""
+  home_assistant:
+    enabled: false
+    url: ""
+    token: ""
   mcp_servers: []
   agents:
     - name: "default"
@@ -46,6 +51,10 @@ schema:
   timezone: str
   web_search_provider: "str?"
   web_search_api_key: "password?"
+  home_assistant:
+    enabled: bool
+    url: "str?"
+    token: "password?"
   mcp_servers:
     - name: str
       json: str
