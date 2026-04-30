@@ -28,14 +28,17 @@ for i, raw in enumerate(opts.get("mcp_servers", [])):
     raw = (raw or "").strip()
     if not raw:
         continue
-    try:
-        srv = json.loads(raw)
-        if isinstance(srv, dict):
-            global_mcp_servers.append(srv)
-        else:
-            print(f"[agent] WARNING: MCP server entry {i} is not a JSON object, skipping", file=sys.stderr)
-    except json.JSONDecodeError as e:
-        print(f"[agent] WARNING: Invalid JSON for MCP server entry {i}: {e}", file=sys.stderr)
+    parts = raw.split("=", 2)
+    srv_name = parts[0].strip()
+    srv_url  = parts[1].strip() if len(parts) > 1 else ""
+    srv_key  = parts[2].strip() if len(parts) > 2 else ""
+    if srv_name and srv_url:
+        entry = {"name": srv_name, "url": srv_url}
+        if srv_key:
+            entry["api_key"] = srv_key
+        global_mcp_servers.append(entry)
+    else:
+        print(f"[agent] WARNING: MCP server entry {i} invalid format (expected name=URL or name=URL=api_key), skipping", file=sys.stderr)
 
 agents = opts.get("agents", [])
 if not agents:
