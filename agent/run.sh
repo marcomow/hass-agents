@@ -43,26 +43,12 @@ if ha_opts.get("enabled"):
               "(Profile → Security → Long-lived access tokens).",
               file=sys.stderr)
     else:
-        # Pre-flight: verify the HA MCP endpoint is reachable before writing config.
-        try:
-            req = urllib.request.Request(ha_url, headers={"Authorization": f"Bearer {ha_token}"})
-            urllib.request.urlopen(req, timeout=5)
-        except urllib.error.HTTPError as e:
-            if e.code in (401, 403):
-                print(f"[agent] WARNING: HA MCP server returned HTTP {e.code} — token rejected. "
-                      "The Supervisor token does not have access to the MCP Server integration. "
-                      "Create a Long-Lived Access Token in HA (Profile → Security → "
-                      "Long-lived access tokens) and set it as home_assistant.token.",
-                      file=sys.stderr)
-            elif e.code == 404:
-                print(f"[agent] WARNING: HA MCP server returned HTTP 404 — "
-                      "endpoint not found. Ensure the 'Model Context Protocol Server' "
-                      "integration is enabled in Home Assistant "
-                      "(Settings → Devices & Services → Add Integration).", file=sys.stderr)
-            # Other HTTP codes (e.g. 405) are fine — SSE endpoints may reject a plain
-            # GET but still work correctly for MCP clients using the SSE protocol.
-        except OSError as e:
-            print(f"[agent] WARNING: Cannot reach HA MCP server at {ha_url} — {e}.",
+        using_supervisor_token = not (ha_opts.get("token") or "").strip()
+        if using_supervisor_token:
+            print("[agent] WARNING: home_assistant.token is not set — falling back to the "
+                  "Supervisor token, which does not have access to the MCP Server integration. "
+                  "Create a Long-Lived Access Token in HA (Profile → Security → "
+                  "Long-lived access tokens) and set it as home_assistant.token.",
                   file=sys.stderr)
         global_mcp_servers.append({
             "name":    "home_assistant",
