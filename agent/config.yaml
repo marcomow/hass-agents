@@ -1,5 +1,5 @@
 name: "AI Agents"
-version: "0.5.8"
+version: "0.5.9"
 slug: agent
 description: >-
   Ultra-lightweight personal AI agents with multi-channel support (Telegram,
@@ -28,8 +28,6 @@ options:
   web_search_api_key: ""
   home_assistant:
     enabled: false
-    url: ""
-    token: ""
   mcp_servers: []
   agents:
     - name: "default"
@@ -53,8 +51,6 @@ schema:
   web_search_api_key: "password?"
   home_assistant:
     enabled: bool
-    url: "str?"
-    token: "password?"
   mcp_servers:
     - name: str
       json: str

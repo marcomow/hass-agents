@@ -16,8 +16,6 @@ Powered by [nanobot](https://github.com/HKUDS/nanobot).
 | `web_search_provider` | No | `duckduckgo` | Web search backend: `duckduckgo`, `brave`, `tavily`, `jina`, `searxng` |
 | `web_search_api_key` | No | *(empty)* | API key for Brave, Tavily, or Jina search providers |
 | `home_assistant.enabled` | No | `false` | Expose Home Assistant's built-in MCP Server to all agents |
-| `home_assistant.url` | No | *(supervisor)* | Override the HA MCP endpoint (default `http://supervisor/core/mcp_server/sse`) |
-| `home_assistant.token` | No | *(supervisor token)* | Override the HA token (defaults to the add-on's Supervisor token) |
 
 ### Home Assistant integration
 
@@ -34,9 +32,9 @@ Server.
    Assist exposed-entities settings).
 3. In this add-on, set `home_assistant.enabled: true` and restart.
 
-The add-on talks to HA through the Supervisor proxy
-(`http://supervisor/core`) using the Supervisor token that Home Assistant
-provides automatically — no manual token setup is needed for the local case.
+No URL or token configuration is needed. Because this add-on runs inside Home
+Assistant, it automatically connects through the Supervisor using the token
+Home Assistant provides.
 To restrict the integration to specific agents, list them in each agent's
 **Active MCP Servers** field (the server name is `home_assistant`).
 
