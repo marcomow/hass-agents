@@ -124,7 +124,7 @@ for idx, agent_opts in enumerate(agents):
         config["tools"] = {"web": {"search": search_cfg}}
 
     # MCP servers: filter global list by agent's mcp_server_names (empty = all), then merge JSON override
-    allowed = [n for n in agent_opts.get("mcp_server_names", []) if n]
+    allowed = [n.strip() for n in (agent_opts.get("mcp_server_names") or "").split(",") if n.strip()]
     mcp_servers = [s for s in global_mcp_servers if not allowed or s.get("name") in allowed]
 
     mcp_servers_json = (agent_opts.get("mcp_servers_json") or "").strip()

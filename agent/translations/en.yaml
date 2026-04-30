@@ -81,8 +81,9 @@ configuration:
   agents_mcp_server_names:
     name: Active MCP Servers
     description: >-
-      Names of MCP servers (from the global MCP Servers list) to activate for
-      this agent. Leave empty to activate all configured MCP servers.
+      Comma-separated names of MCP servers (from the global MCP Servers list)
+      to activate for this agent (e.g. "github,filesystem").
+      Leave empty to activate all configured MCP servers.
   agents_mcp_servers_json:
     name: MCP Servers Override (JSON, advanced)
     description: >-
