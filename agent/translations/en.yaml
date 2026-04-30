@@ -17,9 +17,18 @@ configuration:
   mcp_servers:
     name: MCP Servers
     description: >-
-      One MCP server per entry. Format: name=URL or name=URL=api_key.
-      Examples: github=https://api.githubcopilot.com/mcp/=ghp_xxx
-      or noauth=https://mcp.example.com/sse
+      One entry per MCP server. Give it a name, then paste the JSON
+      config from the server's documentation.
+  mcp_servers_name:
+    name: Server Name
+    description: >-
+      Identifier for this MCP server (e.g. "github", "filesystem").
+      Used in the agent's Active MCP Servers field to reference it.
+  mcp_servers_json:
+    name: Server Config (JSON)
+    description: >-
+      Paste the JSON config for this server from its documentation.
+      Example: {"url":"https://api.githubcopilot.com/mcp/","headers":{"Authorization":"Bearer TOKEN"}}
   agents:
     name: Agents
     description: >-
