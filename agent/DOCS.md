@@ -48,6 +48,7 @@ You can define **multiple independent agent instances**, each with its own model
 | `discord_token` | No | *(empty)* | Discord bot token |
 | `slack_bot_token` | No | *(empty)* | Slack Bot OAuth token (`xoxb-…`) |
 | `slack_app_token` | No | *(empty)* | Slack App-level token (`xapp-…`) |
+| `mcp_server_names` | No | *(empty list)* | Names of global MCP servers to activate — leave empty to use all |
 | `mcp_servers_json` | No | *(empty)* | Advanced: per-agent JSON overrides merged on top of global MCP Servers |
 
 ---
