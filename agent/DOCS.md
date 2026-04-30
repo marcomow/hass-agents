@@ -51,13 +51,17 @@ To restrict the integration to specific agents, list them in each agent's
 
 ### MCP Servers
 
-Add one entry per MCP server using the **MCP Servers** list. Each entry is a single JSON object — paste it directly from the MCP server's documentation. All configured servers are available to all agents by default (use **Active MCP Servers** per agent to restrict which ones are loaded).
+Add one entry per MCP server using the **MCP Servers** list. Each entry has two fields:
 
-Supported JSON fields:
+- **Server Name**: a unique identifier for this server (e.g. `github`, `filesystem`)
+- **Server Config (JSON)**: the server's connection config as a JSON object
+
+All configured servers are available to all agents by default (use **Active MCP Servers** per agent to restrict which ones are loaded).
+
+Supported JSON config fields:
 
 | Field | Required | Description |
 |---|---|---|
-| `name` | Yes | Unique identifier for this MCP server |
 | `command` | No* | Executable for stdio transport (e.g. `npx`, `uvx`) |
 | `args` | No | Space-separated command arguments |
 | `url` | No* | HTTP/SSE endpoint for a remote MCP server |
@@ -94,7 +98,7 @@ You can define **multiple independent agent instances**, each with its own model
 |---|---|---|
 | [OpenRouter](https://openrouter.ai) (default) | `openrouter` | `openrouter/auto` |
 | [OpenAI](https://platform.openai.com) | `openai` | `gpt-4o-mini` |
-| [Anthropic](https://www.anthropic.com) | `anthropic` | `claude-sonnet-4-5` |
+| [Anthropic](https://www.anthropic.com) | `anthropic` | `claude-sonnet-4-6` |
 | [DeepSeek](https://platform.deepseek.com) | `deepseek` | `deepseek-chat` |
 | [Ollama](https://ollama.com) (local) | `ollama` | `llama3.2` |
 | Any OpenAI-compatible | any name | your model ID |
@@ -144,9 +148,12 @@ Add each MCP server as a separate entry in the **MCP Servers** list by pasting i
 
 ```yaml
 mcp_servers:
-  - '{"name":"filesystem","command":"npx","args":"-y @modelcontextprotocol/server-filesystem /config"}'
-  - '{"name":"my-remote-mcp","url":"https://example.com/mcp/","api_key":"my-secret-token","tool_timeout":60}'
-  - '{"name":"github","url":"https://api.githubcopilot.com/mcp/","api_key":"ghp_...","enabled_tools":"get_issue,create_issue"}'
+  - name: filesystem
+    json: '{"command":"npx","args":"-y @modelcontextprotocol/server-filesystem /config"}'
+  - name: my-remote-mcp
+    json: '{"url":"https://example.com/mcp/","api_key":"my-secret-token","tool_timeout":60}'
+  - name: github
+    json: '{"url":"https://api.githubcopilot.com/mcp/","api_key":"ghp_...","enabled_tools":"get_issue,create_issue"}'
 
 agents:
   - name: home-assistant
@@ -177,7 +184,7 @@ agents:
   - name: work-bot
     provider: anthropic
     api_key: sk-ant-...
-    model: claude-sonnet-4-5
+    model: claude-sonnet-4-6
     slack_bot_token: "xoxb-..."
     slack_app_token: "xapp-..."
 ```
