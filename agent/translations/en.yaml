@@ -17,28 +17,22 @@ configuration:
   home_assistant:
     name: Home Assistant Integration
     description: >-
-      Optional. Let agents control Home Assistant by exposing HA's built-in
-      MCP Server as an MCP tool. Requires the "MCP Server" integration to be
-      enabled in Home Assistant (Settings → Devices & Services → Add Integration).
+      Let agents control Home Assistant — turn lights on/off, query sensors,
+      run scripts, and more. Requires the "Model Context Protocol Server"
+      integration enabled in HA (Settings → Devices & Services → Add Integration).
       Disabled by default.
   home_assistant_enabled:
     name: Enable Home Assistant
     description: >-
-      Turn on the Home Assistant MCP integration for all agents. Per-agent
-      access can still be restricted via the Active MCP Servers field
-      (server name is "home_assistant").
-  home_assistant_url:
-    name: Home Assistant MCP URL
-    description: >-
-      Optional. Override the MCP endpoint. Defaults to
-      http://supervisor/core/mcp_server/sse, which routes through the
-      Supervisor to your local HA instance — no change needed in most cases.
+      Expose HA's MCP Server to all agents. Per-agent access can be restricted
+      via the Active MCP Servers field (server name: "home_assistant").
   home_assistant_token:
     name: Home Assistant Token
     description: >-
-      Optional. Long-lived access token for HA. Defaults to the
-      add-on's Supervisor token, which already has API access — only set
-      this if you point the URL at a remote HA instance.
+      Long-lived access token for the HA MCP Server. To create one: open your
+      HA profile at [/profile/security](/profile/security), scroll to
+      "Long-lived access tokens", click Create Token, give it a name (e.g.
+      "AI Agents"), then copy and paste it here.
   mcp_servers:
     name: MCP Servers
     description: >-
