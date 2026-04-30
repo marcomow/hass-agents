@@ -17,43 +17,10 @@ configuration:
   mcp_servers:
     name: MCP Servers
     description: >-
-      List of MCP (Model Context Protocol) servers available to all agents.
-      Each entry is configured with its own fields — no JSON needed.
-  mcp_servers_name:
-    name: Server Name
-    description: >-
-      Unique identifier for this MCP server (e.g. "github", "filesystem").
-  mcp_servers_command:
-    name: Command
-    description: >-
-      Executable for stdio transport (e.g. "npx", "uvx", "python").
-      Required when connecting to a local MCP server process.
-  mcp_servers_args:
-    name: Arguments
-    description: >-
-      Space-separated arguments for the command (e.g.
-      "-y @modelcontextprotocol/server-filesystem /config").
-  mcp_servers_url:
-    name: URL
-    description: >-
-      HTTP or SSE endpoint for a remote MCP server
-      (e.g. "https://api.githubcopilot.com/mcp/").
-      Use this instead of Command for remote servers.
-  mcp_servers_api_key:
-    name: API Key
-    description: >-
-      Bearer token sent as the Authorization header when connecting
-      to a remote MCP server.
-  mcp_servers_enabled_tools:
-    name: Enabled Tools
-    description: >-
-      Comma-separated list of tool names to expose from this server.
-      Leave empty to expose all tools (e.g. "get_issue,create_issue").
-  mcp_servers_tool_timeout:
-    name: Tool Timeout (seconds)
-    description: >-
-      Maximum time in seconds to wait for a single tool call to complete.
-      Leave empty to use the server default.
+      One entry per MCP server. Paste the JSON object for each server
+      (copy it from the MCP server's documentation). Each entry must be a
+      JSON object with at least a "name" field, e.g.
+      {"name":"github","url":"https://api.githubcopilot.com/mcp/","api_key":"ghp_..."}
   agents:
     name: Agents
     description: >-

@@ -23,7 +23,19 @@ except Exception as e:
 timezone           = opts.get("timezone", "UTC").strip()
 search_provider    = opts.get("web_search_provider", "duckduckgo").strip()
 search_api_key     = opts.get("web_search_api_key", "").strip()
-global_mcp_servers = opts.get("mcp_servers", [])
+global_mcp_servers = []
+for i, raw in enumerate(opts.get("mcp_servers", [])):
+    raw = (raw or "").strip()
+    if not raw:
+        continue
+    try:
+        srv = json.loads(raw)
+        if isinstance(srv, dict):
+            global_mcp_servers.append(srv)
+        else:
+            print(f"[agent] WARNING: MCP server entry {i} is not a JSON object, skipping", file=sys.stderr)
+    except json.JSONDecodeError as e:
+        print(f"[agent] WARNING: Invalid JSON for MCP server entry {i}: {e}", file=sys.stderr)
 
 agents = opts.get("agents", [])
 if not agents:
