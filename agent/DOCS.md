@@ -16,6 +16,7 @@ Powered by [nanobot](https://github.com/HKUDS/nanobot).
 | `web_search_provider` | No | `duckduckgo` | Web search backend: `duckduckgo`, `brave`, `tavily`, `jina`, `searxng` |
 | `web_search_api_key` | No | *(empty)* | API key for Brave, Tavily, or Jina search providers |
 | `home_assistant.enabled` | No | `false` | Expose Home Assistant's built-in MCP Server to all agents |
+| `home_assistant.token` | No | *(auto)* | Long-Lived Access Token — required if the default Supervisor token is rejected (HTTP 403) |
 
 ### Home Assistant integration
 
@@ -32,9 +33,15 @@ Server.
    Assist exposed-entities settings).
 3. In this add-on, set `home_assistant.enabled: true` and restart.
 
-No URL or token configuration is needed. Because this add-on runs inside Home
-Assistant, it automatically connects through the Supervisor using the token
-Home Assistant provides.
+The add-on connects automatically through the internal Supervisor proxy — no
+URL configuration is needed. Authentication defaults to the Supervisor token,
+which works in most setups. If the add-on logs an **HTTP 403** error at
+startup, the HA MCP Server integration requires a regular user token instead:
+
+1. In HA, go to your **Profile → Security → Long-lived access tokens**.
+2. Create a new token and copy it.
+3. Paste it into `home_assistant.token` and restart the add-on.
+
 To restrict the integration to specific agents, list them in each agent's
 **Active MCP Servers** field (the server name is `home_assistant`).
 

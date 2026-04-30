@@ -29,14 +29,18 @@ global_mcp_servers = []
 
 # Home Assistant integration (opt-in): expose HA's built-in MCP Server to agents.
 # Requires the "Model Context Protocol Server" integration enabled in Home Assistant.
-# URL and token are auto-detected via the Supervisor — no user configuration needed.
+# The URL is always the internal supervisor proxy. The token defaults to the
+# Supervisor-provided token, but the HA MCP Server requires a regular HA user token
+# (long-lived access token) — set home_assistant.token if the supervisor token is
+# rejected (HTTP 403).
 ha_opts = opts.get("home_assistant") or {}
 if ha_opts.get("enabled"):
     ha_url   = "http://supervisor/core/mcp_server/sse"
-    ha_token = os.environ.get("SUPERVISOR_TOKEN", "")
+    ha_token = (ha_opts.get("token") or "").strip() or os.environ.get("SUPERVISOR_TOKEN", "")
     if not ha_token:
-        print("[agent] WARNING: Home Assistant integration enabled but SUPERVISOR_TOKEN "
-              "is not set — is this add-on running inside Home Assistant?",
+        print("[agent] WARNING: Home Assistant integration enabled but no token available. "
+              "Set home_assistant.token to a Long-Lived Access Token from HA "
+              "(Profile → Security → Long-lived access tokens).",
               file=sys.stderr)
     else:
         # Pre-flight: verify the HA MCP endpoint is reachable before writing config.
@@ -45,9 +49,11 @@ if ha_opts.get("enabled"):
             urllib.request.urlopen(req, timeout=5)
         except urllib.error.HTTPError as e:
             if e.code in (401, 403):
-                print(f"[agent] WARNING: HA MCP server returned HTTP {e.code} — "
-                      "Supervisor token rejected. Ensure this add-on has "
-                      "'homeassistant_api: true' in its configuration.", file=sys.stderr)
+                print(f"[agent] WARNING: HA MCP server returned HTTP {e.code} — token rejected. "
+                      "The Supervisor token does not have access to the MCP Server integration. "
+                      "Create a Long-Lived Access Token in HA (Profile → Security → "
+                      "Long-lived access tokens) and set it as home_assistant.token.",
+                      file=sys.stderr)
             elif e.code == 404:
                 print(f"[agent] WARNING: HA MCP server returned HTTP 404 — "
                       "endpoint not found. Ensure the 'Model Context Protocol Server' "
