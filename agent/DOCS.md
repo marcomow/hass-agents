@@ -18,13 +18,15 @@ Powered by [nanobot](https://github.com/HKUDS/nanobot).
 
 ### MCP Servers
 
-Add one entry per MCP server using the **MCP Servers** list. These servers are available to all agents.
+Add one entry per MCP server using the **MCP Servers** list. Each entry is a single JSON object — paste it directly from the MCP server's documentation. All configured servers are available to all agents by default (use **Active MCP Servers** per agent to restrict which ones are loaded).
+
+Supported JSON fields:
 
 | Field | Required | Description |
 |---|---|---|
-| `name` | Yes | Unique identifier for this MCP server (e.g. `github`, `filesystem`) |
-| `command` | No* | Executable for stdio transport (e.g. `npx`, `uvx`, `python`) |
-| `args` | No | Space-separated arguments for the command |
+| `name` | Yes | Unique identifier for this MCP server |
+| `command` | No* | Executable for stdio transport (e.g. `npx`, `uvx`) |
+| `args` | No | Space-separated command arguments |
 | `url` | No* | HTTP/SSE endpoint for a remote MCP server |
 | `api_key` | No | Bearer token sent as the `Authorization` header |
 | `enabled_tools` | No | Comma-separated tool names to expose — omit for all |
@@ -105,21 +107,13 @@ http://<your-ha-ip>:18790
 
 ## MCP servers example
 
-Add each MCP server as a separate entry in the **MCP Servers** list:
+Add each MCP server as a separate entry in the **MCP Servers** list by pasting its JSON config:
 
 ```yaml
 mcp_servers:
-  - name: filesystem
-    command: npx
-    args: "-y @modelcontextprotocol/server-filesystem /config"
-  - name: my-remote-mcp
-    url: "https://example.com/mcp/"
-    api_key: my-secret-token
-    tool_timeout: 60
-  - name: github
-    url: "https://api.githubcopilot.com/mcp/"
-    api_key: "ghp_..."
-    enabled_tools: "get_issue,create_issue"
+  - '{"name":"filesystem","command":"npx","args":"-y @modelcontextprotocol/server-filesystem /config"}'
+  - '{"name":"my-remote-mcp","url":"https://example.com/mcp/","api_key":"my-secret-token","tool_timeout":60}'
+  - '{"name":"github","url":"https://api.githubcopilot.com/mcp/","api_key":"ghp_...","enabled_tools":"get_issue,create_issue"}'
 
 agents:
   - name: home-assistant
@@ -127,6 +121,14 @@ agents:
     api_key: sk-...
     model: gpt-4o-mini
     telegram_token: "123456:ABC..."
+  - name: work-bot
+    provider: anthropic
+    api_key: sk-ant-...
+    model: claude-sonnet-4-6
+    slack_bot_token: "xoxb-..."
+    slack_app_token: "xapp-..."
+    mcp_server_names:
+      - github
 ```
 
 ---
