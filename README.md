@@ -51,6 +51,17 @@ Open the add-on **Configuration** tab and set at minimum:
 | `web_search_provider` | `duckduckgo` (free), `brave`, `tavily`, `jina`, `searxng` |
 | `web_search_api_key` | API key for Brave, Tavily, or Jina |
 
+#### Home Assistant integration (optional, disabled by default)
+
+| Option | Description |
+|---|---|
+| `home_assistant.enabled` | Set `true` to let agents call Home Assistant via its built-in MCP Server |
+| `home_assistant.url` | Override MCP endpoint (default `http://supervisor/core/mcp_server/sse`) |
+| `home_assistant.token` | Override token (defaults to the Supervisor token, which already works locally) |
+
+Requires the **Model Context Protocol Server** integration to be enabled in
+Home Assistant. See the add-on's docs tab for setup details.
+
 ### 4. Start
 
 Click **Start**. The agent gateway is available at `http://<ha-ip>:18790`.

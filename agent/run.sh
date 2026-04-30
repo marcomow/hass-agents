@@ -24,6 +24,27 @@ timezone           = opts.get("timezone", "UTC").strip()
 search_provider    = opts.get("web_search_provider", "duckduckgo").strip()
 search_api_key     = opts.get("web_search_api_key", "").strip()
 global_mcp_servers = []
+
+# Home Assistant integration (opt-in): expose HA's built-in MCP Server to agents.
+# Requires the "MCP Server" integration enabled in Home Assistant. The add-on
+# uses the Supervisor-provided token to call HA's API at http://supervisor/core
+# unless an explicit url/token override is given.
+ha_opts = opts.get("home_assistant") or {}
+if ha_opts.get("enabled"):
+    ha_url   = (ha_opts.get("url")   or "").strip() or "http://supervisor/core/mcp_server/sse"
+    ha_token = (ha_opts.get("token") or "").strip() or os.environ.get("SUPERVISOR_TOKEN", "")
+    if not ha_token:
+        print("[agent] WARNING: Home Assistant integration enabled but no token "
+              "is available (SUPERVISOR_TOKEN missing and no override set).",
+              file=sys.stderr)
+    else:
+        global_mcp_servers.append({
+            "name":    "home_assistant",
+            "url":     ha_url,
+            "api_key": ha_token,
+        })
+        print(f"[agent] Home Assistant MCP server enabled → {ha_url}")
+
 for i, entry in enumerate(opts.get("mcp_servers", [])):
     if not isinstance(entry, dict):
         print(f"[agent] WARNING: MCP server entry {i} is not an object, skipping", file=sys.stderr)

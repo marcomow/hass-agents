@@ -14,6 +14,31 @@ configuration:
     description: >-
       API key for the chosen search provider (Brave, Tavily, or Jina).
       Not required for duckduckgo or searxng.
+  home_assistant:
+    name: Home Assistant Integration
+    description: >-
+      Optional. Let agents control Home Assistant by exposing HA's built-in
+      MCP Server as an MCP tool. Requires the "MCP Server" integration to be
+      enabled in Home Assistant (Settings → Devices & Services → Add Integration).
+      Disabled by default.
+  home_assistant_enabled:
+    name: Enable Home Assistant
+    description: >-
+      Turn on the Home Assistant MCP integration for all agents. Per-agent
+      access can still be restricted via the Active MCP Servers field
+      (server name is "home_assistant").
+  home_assistant_url:
+    name: Home Assistant MCP URL
+    description: >-
+      Optional. Override the MCP endpoint. Defaults to
+      http://supervisor/core/mcp_server/sse, which routes through the
+      Supervisor to your local HA instance — no change needed in most cases.
+  home_assistant_token:
+    name: Home Assistant Token
+    description: >-
+      Optional. Long-lived access token for HA. Defaults to the
+      add-on's Supervisor token, which already has API access — only set
+      this if you point the URL at a remote HA instance.
   mcp_servers:
     name: MCP Servers
     description: >-
