@@ -9,6 +9,8 @@ python3 - << 'PYEOF'
 import json
 import os
 import sys
+import urllib.request
+import urllib.error
 
 OPTIONS_PATH = "/data/options.json"
 BASE_PORT    = 18790
@@ -26,20 +28,36 @@ search_api_key     = opts.get("web_search_api_key", "").strip()
 global_mcp_servers = []
 
 # Home Assistant integration (opt-in): expose HA's built-in MCP Server to agents.
-# Requires the "MCP Server" integration enabled in Home Assistant. The add-on
-# uses the Supervisor-provided token to call HA's API at http://supervisor/core
-# unless an explicit url/token override is given.
+# Requires the "Model Context Protocol Server" integration enabled in Home Assistant.
+# URL and token are auto-detected via the Supervisor — no user configuration needed.
 ha_opts = opts.get("home_assistant") or {}
 if ha_opts.get("enabled"):
-    ha_url   = (ha_opts.get("url")   or "").strip() or "http://supervisor/core"
-    ha_token = (ha_opts.get("token") or "").strip() or os.environ.get("SUPERVISOR_TOKEN", "")
-    if "/mcp_server/sse" not in ha_url:
-        ha_url = ha_url.rstrip("/") + "/mcp_server/sse"
+    ha_url   = "http://supervisor/core/mcp_server/sse"
+    ha_token = os.environ.get("SUPERVISOR_TOKEN", "")
     if not ha_token:
-        print("[agent] WARNING: Home Assistant integration enabled but no token "
-              "is available (SUPERVISOR_TOKEN missing and no override set).",
+        print("[agent] WARNING: Home Assistant integration enabled but SUPERVISOR_TOKEN "
+              "is not set — is this add-on running inside Home Assistant?",
               file=sys.stderr)
     else:
+        # Pre-flight: verify the HA MCP endpoint is reachable before writing config.
+        try:
+            req = urllib.request.Request(ha_url, headers={"Authorization": f"Bearer {ha_token}"})
+            urllib.request.urlopen(req, timeout=5)
+        except urllib.error.HTTPError as e:
+            if e.code in (401, 403):
+                print(f"[agent] WARNING: HA MCP server returned HTTP {e.code} — "
+                      "Supervisor token rejected. Ensure this add-on has "
+                      "'homeassistant_api: true' in its configuration.", file=sys.stderr)
+            elif e.code == 404:
+                print(f"[agent] WARNING: HA MCP server returned HTTP 404 — "
+                      "endpoint not found. Ensure the 'Model Context Protocol Server' "
+                      "integration is enabled in Home Assistant "
+                      "(Settings → Devices & Services → Add Integration).", file=sys.stderr)
+            # Other HTTP codes (e.g. 405) are fine — SSE endpoints may reject a plain
+            # GET but still work correctly for MCP clients using the SSE protocol.
+        except OSError as e:
+            print(f"[agent] WARNING: Cannot reach HA MCP server at {ha_url} — {e}.",
+                  file=sys.stderr)
         global_mcp_servers.append({
             "name":    "home_assistant",
             "url":     ha_url,
