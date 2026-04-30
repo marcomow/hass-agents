@@ -16,6 +16,22 @@ Powered by [nanobot](https://github.com/HKUDS/nanobot).
 | `web_search_provider` | No | `duckduckgo` | Web search backend: `duckduckgo`, `brave`, `tavily`, `jina`, `searxng` |
 | `web_search_api_key` | No | *(empty)* | API key for Brave, Tavily, or Jina search providers |
 
+### MCP Servers
+
+Add one entry per MCP server using the **MCP Servers** list. These servers are available to all agents.
+
+| Field | Required | Description |
+|---|---|---|
+| `name` | Yes | Unique identifier for this MCP server (e.g. `github`, `filesystem`) |
+| `command` | No* | Executable for stdio transport (e.g. `npx`, `uvx`, `python`) |
+| `args` | No | Space-separated arguments for the command |
+| `url` | No* | HTTP/SSE endpoint for a remote MCP server |
+| `api_key` | No | Bearer token sent as the `Authorization` header |
+| `enabled_tools` | No | Comma-separated tool names to expose — omit for all |
+| `tool_timeout` | No | Per-call timeout in seconds |
+
+\* Either `command` (stdio) or `url` (HTTP/SSE) is required per server.
+
 ### Agents
 
 You can define **multiple independent agent instances**, each with its own model and messaging channel.
@@ -32,23 +48,7 @@ You can define **multiple independent agent instances**, each with its own model
 | `discord_token` | No | *(empty)* | Discord bot token |
 | `slack_bot_token` | No | *(empty)* | Slack Bot OAuth token (`xoxb-…`) |
 | `slack_app_token` | No | *(empty)* | Slack App-level token (`xapp-…`) |
-| `mcp_servers_json` | No | *(empty)* | JSON array of MCP server objects (see below) |
-
-#### MCP server JSON format
-
-The `mcp_servers_json` field accepts a JSON array of server objects. Each object supports:
-
-| Field | Required | Description |
-|---|---|---|
-| `name` | Yes | Unique identifier for this MCP server |
-| `command` | No* | Executable to run (for stdio transport, e.g. `npx`, `uvx`) |
-| `args` | No | Space-separated command arguments for stdio transport |
-| `url` | No* | HTTP/SSE endpoint URL (for remote MCP servers) |
-| `api_key` | No | Bearer token for authentication |
-| `enabled_tools` | No | Comma-separated list of tools to register — omit for all |
-| `tool_timeout` | No | Per-call timeout in seconds (default: 30) |
-
-\* Either `command` (stdio) or `url` (HTTP) is required.
+| `mcp_servers_json` | No | *(empty)* | Advanced: per-agent JSON overrides merged on top of global MCP Servers |
 
 ---
 
@@ -104,19 +104,28 @@ http://<your-ha-ip>:18790
 
 ## MCP servers example
 
+Add each MCP server as a separate entry in the **MCP Servers** list:
+
 ```yaml
+mcp_servers:
+  - name: filesystem
+    command: npx
+    args: "-y @modelcontextprotocol/server-filesystem /config"
+  - name: my-remote-mcp
+    url: "https://example.com/mcp/"
+    api_key: my-secret-token
+    tool_timeout: 60
+  - name: github
+    url: "https://api.githubcopilot.com/mcp/"
+    api_key: "ghp_..."
+    enabled_tools: "get_issue,create_issue"
+
 agents:
   - name: home-assistant
     provider: openai
     api_key: sk-...
     model: gpt-4o-mini
     telegram_token: "123456:ABC..."
-    mcp_servers_json: >-
-      [
-        {"name": "filesystem", "command": "npx", "args": "-y @modelcontextprotocol/server-filesystem /config"},
-        {"name": "my-remote-mcp", "url": "https://example.com/mcp/", "api_key": "my-secret-token", "tool_timeout": 60},
-        {"name": "github", "url": "https://api.githubcopilot.com/mcp/", "api_key": "ghp_...", "enabled_tools": "get_issue,create_issue"}
-      ]
 ```
 
 ---

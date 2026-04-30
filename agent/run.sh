@@ -20,9 +20,10 @@ except Exception as e:
     print(f"[agent] ERROR: Could not read options: {e}", file=sys.stderr)
     sys.exit(1)
 
-timezone        = opts.get("timezone", "UTC").strip()
-search_provider = opts.get("web_search_provider", "duckduckgo").strip()
-search_api_key  = opts.get("web_search_api_key", "").strip()
+timezone           = opts.get("timezone", "UTC").strip()
+search_provider    = opts.get("web_search_provider", "duckduckgo").strip()
+search_api_key     = opts.get("web_search_api_key", "").strip()
+global_mcp_servers = opts.get("mcp_servers", [])
 
 agents = opts.get("agents", [])
 if not agents:
@@ -110,16 +111,26 @@ for idx, agent_opts in enumerate(agents):
             search_cfg["apiKey"] = search_api_key
         config["tools"] = {"web": {"search": search_cfg}}
 
-    # MCP servers (JSON string field to avoid HA nested-list UI bug)
+    # MCP servers: global structured list merged with optional per-agent JSON override
+    mcp_servers = list(global_mcp_servers)
+
     mcp_servers_json = (agent_opts.get("mcp_servers_json") or "").strip()
     if mcp_servers_json:
         try:
-            mcp_servers = json.loads(mcp_servers_json)
-            if not isinstance(mcp_servers, list):
-                mcp_servers = [mcp_servers]
+            per_agent = json.loads(mcp_servers_json)
+            if not isinstance(per_agent, list):
+                per_agent = [per_agent]
+            by_name = {s.get("name", ""): i for i, s in enumerate(mcp_servers)}
+            for server in per_agent:
+                srv_name = server.get("name", "")
+                if srv_name in by_name:
+                    mcp_servers[by_name[srv_name]] = server
+                else:
+                    mcp_servers.append(server)
         except json.JSONDecodeError as e:
             print(f"[agent:{name}] WARNING: Invalid mcp_servers_json: {e}", file=sys.stderr)
-            mcp_servers = []
+
+    if mcp_servers:
         mcp_cfg = {}
         for server in mcp_servers:
             srv_name = (server.get("name") or "").strip()
