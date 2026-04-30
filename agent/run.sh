@@ -9,6 +9,8 @@ python3 - << 'PYEOF'
 import json
 import os
 import sys
+import urllib.request
+import urllib.error
 
 OPTIONS_PATH = "/data/options.json"
 BASE_PORT    = 18790
@@ -31,15 +33,52 @@ global_mcp_servers = []
 # unless an explicit url/token override is given.
 ha_opts = opts.get("home_assistant") or {}
 if ha_opts.get("enabled"):
-    ha_url   = (ha_opts.get("url")   or "").strip() or "http://supervisor/core"
+    ha_url_override = (ha_opts.get("url") or "").strip()
+    ha_url   = ha_url_override or "http://supervisor/core"
     ha_token = (ha_opts.get("token") or "").strip() or os.environ.get("SUPERVISOR_TOKEN", "")
     if "/mcp_server/sse" not in ha_url:
         ha_url = ha_url.rstrip("/") + "/mcp_server/sse"
+    # Warn when user sets a custom (non-supervisor) URL without an explicit token.
+    # The Supervisor token only authenticates through the supervisor proxy; hitting
+    # the HA LAN IP directly requires a Long-Lived Access Token from the HA profile.
+    if ha_url_override and not (ha_opts.get("token") or "").strip():
+        print("[agent] WARNING: home_assistant.url is overridden to an external address "
+              "but no token is set. The Supervisor token only works via the internal "
+              "http://supervisor/core proxy. Set home_assistant.token to a Long-Lived "
+              "Access Token from your HA user profile (Profile → Security → Long-lived "
+              "access tokens).", file=sys.stderr)
+    # Warn when a non-supervisor URL is used — the add-on container may not be able to
+    # reach LAN IPs directly. The supervisor proxy is the reliable internal path.
+    if ha_url_override and not ha_url_override.startswith("http://supervisor"):
+        print(f"[agent] WARNING: Using custom HA URL '{ha_url}'. "
+              "If the connection fails, check: (1) the port is correct (HA default is 8123), "
+              "(2) this add-on's container can reach that address (try the default "
+              "supervisor URL instead by clearing the home_assistant.url field).",
+              file=sys.stderr)
     if not ha_token:
         print("[agent] WARNING: Home Assistant integration enabled but no token "
               "is available (SUPERVISOR_TOKEN missing and no override set).",
               file=sys.stderr)
     else:
+        # Pre-flight: verify the HA MCP endpoint is reachable before writing config.
+        try:
+            req = urllib.request.Request(ha_url, headers={"Authorization": f"Bearer {ha_token}"})
+            urllib.request.urlopen(req, timeout=5)
+        except urllib.error.HTTPError as e:
+            if e.code in (401, 403):
+                print(f"[agent] WARNING: HA MCP server at {ha_url} returned HTTP {e.code} — "
+                      "token rejected. For external URLs use a Long-Lived Access Token from "
+                      "HA Profile → Security → Long-lived access tokens.", file=sys.stderr)
+            elif e.code == 404:
+                print(f"[agent] WARNING: HA MCP server at {ha_url} returned HTTP 404 — "
+                      "endpoint not found. Ensure the 'Model Context Protocol Server' "
+                      "integration is enabled in Home Assistant.", file=sys.stderr)
+            # Other HTTP codes (e.g. 200, 405) are fine — SSE endpoints may reject
+            # non-streaming GET with 405 but still work for MCP clients.
+        except OSError as e:
+            print(f"[agent] WARNING: Cannot reach HA MCP server at {ha_url} — {e}. "
+                  "Check the URL (host, port) and that the address is reachable from "
+                  "this add-on's container.", file=sys.stderr)
         global_mcp_servers.append({
             "name":    "home_assistant",
             "url":     ha_url,
