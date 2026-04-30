@@ -24,18 +24,27 @@ timezone           = opts.get("timezone", "UTC").strip()
 search_provider    = opts.get("web_search_provider", "duckduckgo").strip()
 search_api_key     = opts.get("web_search_api_key", "").strip()
 global_mcp_servers = []
-for i, raw in enumerate(opts.get("mcp_servers", [])):
-    raw = (raw or "").strip()
-    if not raw:
+for i, entry in enumerate(opts.get("mcp_servers", [])):
+    if not isinstance(entry, dict):
+        print(f"[agent] WARNING: MCP server entry {i} is not an object, skipping", file=sys.stderr)
+        continue
+    srv_name = (entry.get("name") or "").strip()
+    raw_json = (entry.get("json") or "").strip()
+    if not srv_name:
+        print(f"[agent] WARNING: MCP server entry {i} missing name, skipping", file=sys.stderr)
+        continue
+    if not raw_json:
+        print(f"[agent] WARNING: MCP server '{srv_name}' has no json config, skipping", file=sys.stderr)
         continue
     try:
-        srv = json.loads(raw)
-        if isinstance(srv, dict):
-            global_mcp_servers.append(srv)
+        srv_cfg = json.loads(raw_json)
+        if isinstance(srv_cfg, dict):
+            srv_cfg["name"] = srv_name
+            global_mcp_servers.append(srv_cfg)
         else:
-            print(f"[agent] WARNING: MCP server entry {i} is not a JSON object, skipping", file=sys.stderr)
+            print(f"[agent] WARNING: MCP server '{srv_name}' json is not an object, skipping", file=sys.stderr)
     except json.JSONDecodeError as e:
-        print(f"[agent] WARNING: Invalid JSON for MCP server entry {i}: {e}", file=sys.stderr)
+        print(f"[agent] WARNING: MCP server '{srv_name}' invalid JSON: {e}", file=sys.stderr)
 
 agents = opts.get("agents", [])
 if not agents:

@@ -1,5 +1,5 @@
 name: "AI Agents"
-version: "0.5.3"
+version: "0.5.5"
 slug: agent
 description: >-
   Ultra-lightweight personal AI agents with multi-channel support (Telegram,
@@ -47,7 +47,8 @@ schema:
   web_search_provider: "str?"
   web_search_api_key: "password?"
   mcp_servers:
-    - "str?"
+    - name: str
+      json: str
   agents:
     - name: str
       provider: str
