@@ -56,8 +56,7 @@ Open the add-on **Configuration** tab and set at minimum:
 | Option | Description |
 |---|---|
 | `home_assistant.enabled` | Set `true` to let agents call Home Assistant via its built-in MCP Server |
-| `home_assistant.url` | Override MCP endpoint (default `http://supervisor/core/mcp_server/sse`) |
-| `home_assistant.token` | Override token (defaults to the Supervisor token, which already works locally) |
+| `home_assistant.token` | Long-lived access token for the HA MCP Server (defaults to the Supervisor token; set this if you get HTTP 403) |
 
 Requires the **Model Context Protocol Server** integration to be enabled in
 Home Assistant. See the add-on's docs tab for setup details.
@@ -72,7 +71,7 @@ Click **Start**. The agent gateway is available at `http://<ha-ip>:18790`.
 |---|---|---|
 | OpenRouter (default) | `openrouter` | `openrouter/auto` |
 | OpenAI | `openai` | `gpt-4o-mini` |
-| Anthropic | `anthropic` | `claude-sonnet-4-5` |
+| Anthropic | `anthropic` | `claude-sonnet-4-6` |
 | DeepSeek | `deepseek` | `deepseek-chat` |
 | Ollama (local) | `ollama` | `llama3.2` |
 
