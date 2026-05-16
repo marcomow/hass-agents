@@ -1,5 +1,5 @@
 name: "AI Agents"
-version: "0.5.12"
+version: "0.5.13"
 slug: agent
 description: >-
   Ultra-lightweight personal AI agents with multi-channel support (Telegram,
