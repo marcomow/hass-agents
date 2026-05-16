@@ -33,7 +33,7 @@ global_mcp_servers = []
 # Supervisor token is NOT accepted by the MCP Server endpoint (returns HTTP 403).
 ha_opts = opts.get("home_assistant") or {}
 if ha_opts.get("enabled"):
-    ha_url   = "http://supervisor/core/mcp_server/sse"
+    ha_url   = "http://homeassistant:8123/mcp_server/sse"
     ha_token = (ha_opts.get("token") or "").strip()
     if not ha_token:
         print("[agent] ERROR: Home Assistant integration is enabled but home_assistant.token is not set. "
