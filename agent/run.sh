@@ -29,27 +29,19 @@ global_mcp_servers = []
 
 # Home Assistant integration (opt-in): expose HA's built-in MCP Server to agents.
 # Requires the "Model Context Protocol Server" integration enabled in Home Assistant.
-# The URL is always the internal supervisor proxy. The token defaults to the
-# Supervisor-provided token, but the HA MCP Server requires a regular HA user token
-# (long-lived access token) — set home_assistant.token if the supervisor token is
-# rejected (HTTP 403).
+# A Long-Lived Access Token (LLAT) from a regular HA user is required — the
+# Supervisor token is NOT accepted by the MCP Server endpoint (returns HTTP 403).
 ha_opts = opts.get("home_assistant") or {}
 if ha_opts.get("enabled"):
-    ha_url   = "http://supervisor/core/mcp_server/sse"
-    ha_token = (ha_opts.get("token") or "").strip() or os.environ.get("SUPERVISOR_TOKEN", "")
+    ha_url   = "http://homeassistant:8123/mcp_server/sse"
+    ha_token = (ha_opts.get("token") or "").strip()
     if not ha_token:
-        print("[agent] WARNING: Home Assistant integration enabled but no token available. "
-              "Set home_assistant.token to a Long-Lived Access Token from HA "
-              "(Profile → Security → Long-lived access tokens).",
+        print("[agent] ERROR: Home Assistant integration is enabled but home_assistant.token is not set. "
+              "The Supervisor token cannot be used — the HA MCP Server requires a Long-Lived Access Token "
+              "from a regular HA user (Profile → Security → Long-lived access tokens). "
+              "Set home_assistant.token and restart the add-on.",
               file=sys.stderr)
     else:
-        using_supervisor_token = not (ha_opts.get("token") or "").strip()
-        if using_supervisor_token:
-            print("[agent] WARNING: home_assistant.token is not set — falling back to the "
-                  "Supervisor token, which does not have access to the MCP Server integration. "
-                  "Create a Long-Lived Access Token in HA (Profile → Security → "
-                  "Long-lived access tokens) and set it as home_assistant.token.",
-                  file=sys.stderr)
         global_mcp_servers.append({
             "name":    "home_assistant",
             "url":     ha_url,
