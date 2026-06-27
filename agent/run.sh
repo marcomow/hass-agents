@@ -8,12 +8,14 @@ echo "[agent] Generating configs from Home Assistant options..."
 python3 - << 'PYEOF'
 import json
 import os
+import secrets
 import sys
 import urllib.request
 import urllib.error
 
 OPTIONS_PATH = "/data/options.json"
 BASE_PORT    = 18790
+WEBUI_BASE_PORT = 8765
 
 try:
     with open(OPTIONS_PATH) as f:
@@ -23,9 +25,14 @@ except Exception as e:
     sys.exit(1)
 
 timezone           = opts.get("timezone", "UTC").strip()
+webui_password     = opts.get("webui_password", "").strip()
 search_provider    = opts.get("web_search_provider", "duckduckgo").strip()
 search_api_key     = opts.get("web_search_api_key", "").strip()
 global_mcp_servers = []
+
+if not webui_password:
+    webui_password = secrets.token_urlsafe(16)
+    print(f"[agent] WebUI password (auto-generated): {webui_password}")
 
 # Home Assistant integration (opt-in): expose HA's built-in MCP Server to agents.
 # Requires the "Model Context Protocol Server" integration enabled in Home Assistant.
@@ -102,6 +109,8 @@ for idx, agent_opts in enumerate(agents):
     groq_api_key  = agent_opts.get("groq_api_key", "").strip()
     system_prompt = agent_opts.get("system_prompt","").strip()
 
+    webui_port = WEBUI_BASE_PORT + idx
+
     config = {
         "providers": {},
         "agents": {
@@ -113,7 +122,14 @@ for idx, agent_opts in enumerate(agents):
             }
         },
         "gateway":  {"port": port},
-        "channels": {},
+        "channels": {
+            "websocket": {
+                "enabled": True,
+                "host": "0.0.0.0",
+                "port": webui_port,
+                "tokenIssueSecret": webui_password,
+            },
+        },
     }
 
     # Provider credentials
@@ -231,8 +247,8 @@ for idx, agent_opts in enumerate(agents):
     elif os.path.exists(soul_path):
         os.remove(soul_path)
 
-    channels_enabled = list(config["channels"].keys())
-    print(f"[agent:{name}] Config written → {config_path}  (port {port})")
+    channels_enabled = [k for k in config["channels"] if k != "websocket"]
+    print(f"[agent:{name}] Config written → {config_path}  (gateway {port}, webui {webui_port})")
     print(f"[agent:{name}] Provider: {provider} | Model: {model} | Timezone: {timezone}")
     print(f"[agent:{name}] Channels: {channels_enabled if channels_enabled else 'none (gateway only)'}")
 
