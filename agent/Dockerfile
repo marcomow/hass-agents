@@ -14,6 +14,10 @@ RUN apt-get update && \
 # Install the agent package
 RUN uv pip install --system --no-cache nanobot-ai==0.2.2
 
+# Patch nanobot WebUI for Home Assistant ingress (absolute → relative paths)
+COPY patches/ingress_fix.py /tmp/ingress_fix.py
+RUN python3 /tmp/ingress_fix.py && rm /tmp/ingress_fix.py
+
 # Ensure the agent config directory exists
 RUN mkdir -p /root/.nanobot
 
