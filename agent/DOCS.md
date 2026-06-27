@@ -13,7 +13,8 @@ Powered by [nanobot](https://github.com/HKUDS/nanobot).
 | Option | Required | Default | Description |
 |---|---|---|---|
 | `timezone` | Yes | `UTC` | IANA timezone string (e.g. `Europe/Berlin`) |
-| `webui_password` | No | *(auto-generated)* | Password for the built-in chat UI — if empty, a random password is generated on each start (see add-on logs) |
+| `webui_password` | No | *(auto-generated)* | **Deprecated** — use `token_issue_secret` instead. Kept for backward compatibility; ignored when `token_issue_secret` is set |
+| `token_issue_secret` | No | *(auto-generated)* | Secret for the built-in chat UI login (`tokenIssueSecret` in nanobot) — if empty, falls back to `webui_password`, then auto-generates a random value on each start (see add-on logs) |
 | `web_search_provider` | No | `duckduckgo` | Web search backend: `duckduckgo`, `brave`, `tavily`, `jina`, `searxng` |
 | `web_search_api_key` | No | *(empty)* | API key for Brave, Tavily, or Jina search providers |
 | `home_assistant.enabled` | No | `false` | Expose Home Assistant's built-in MCP Server to all agents |
@@ -148,9 +149,9 @@ The add-on includes a built-in chat UI powered by nanobot's WebUI.
 http://<your-ha-ip>:8765
 ```
 
-Log in with the password set in `webui_password`. If you leave `webui_password`
-empty, a random password is generated on each start — check the add-on logs
-to find it.
+Log in with the secret set in `token_issue_secret` (or `webui_password`). If
+both are empty, a random secret is generated on each start — check the add-on
+logs to find it.
 
 When running multiple agents, the sidebar and "Open Web UI" button open the
 first agent's chat UI. Additional agents are available on consecutive ports
