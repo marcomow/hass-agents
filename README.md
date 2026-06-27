@@ -33,6 +33,7 @@ Open the add-on **Configuration** tab and set at minimum:
 | `model` | Model to use | `openrouter/auto` |
 | `api_base` | Custom API base URL (optional) | *(empty)* |
 | `timezone` | IANA timezone, e.g. `Europe/Berlin` | `UTC` |
+| `token_issue_secret` | Secret for the WebUI login (`tokenIssueSecret`) — auto-generated if empty | *(auto-generated)* |
 
 #### Messaging channels (all optional)
 

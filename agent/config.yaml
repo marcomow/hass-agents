@@ -1,5 +1,5 @@
 name: "AI Agents"
-version: "0.5.16"
+version: "0.5.17"
 slug: agent
 description: >-
   Ultra-lightweight personal AI agents with multi-channel support (Telegram,
@@ -31,6 +31,7 @@ panel_title: AI Agents
 options:
   timezone: "UTC"
   webui_password: ""
+  token_issue_secret: ""
   web_search_provider: "duckduckgo"
   web_search_api_key: ""
   home_assistant:
@@ -56,6 +57,7 @@ options:
 schema:
   timezone: str
   webui_password: "password?"
+  token_issue_secret: "password?"
   web_search_provider: "str?"
   web_search_api_key: "password?"
   home_assistant:

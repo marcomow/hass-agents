@@ -26,13 +26,14 @@ except Exception as e:
 
 timezone           = opts.get("timezone", "UTC").strip()
 webui_password     = opts.get("webui_password", "").strip()
+token_issue_secret = opts.get("token_issue_secret", "").strip() or webui_password
 search_provider    = opts.get("web_search_provider", "duckduckgo").strip()
 search_api_key     = opts.get("web_search_api_key", "").strip()
 global_mcp_servers = []
 
-if not webui_password:
-    webui_password = secrets.token_urlsafe(16)
-    print(f"[agent] WebUI password (auto-generated): {webui_password}")
+if not token_issue_secret:
+    token_issue_secret = secrets.token_urlsafe(16)
+    print(f"[agent] tokenIssueSecret (auto-generated): {token_issue_secret}")
 
 # Home Assistant integration (opt-in): expose HA's built-in MCP Server to agents.
 # Requires the "Model Context Protocol Server" integration enabled in Home Assistant.
@@ -127,7 +128,7 @@ for idx, agent_opts in enumerate(agents):
                 "enabled": True,
                 "host": "0.0.0.0",
                 "port": webui_port,
-                "tokenIssueSecret": webui_password,
+                "tokenIssueSecret": token_issue_secret,
             },
         },
     }
