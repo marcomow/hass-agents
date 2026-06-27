@@ -13,6 +13,7 @@ Powered by [nanobot](https://github.com/HKUDS/nanobot).
 | Option | Required | Default | Description |
 |---|---|---|---|
 | `timezone` | Yes | `UTC` | IANA timezone string (e.g. `Europe/Berlin`) |
+| `webui_password` | No | *(auto-generated)* | Password for the built-in chat UI — if empty, a random password is generated on each start (see add-on logs) |
 | `web_search_provider` | No | `duckduckgo` | Web search backend: `duckduckgo`, `brave`, `tavily`, `jina`, `searxng` |
 | `web_search_api_key` | No | *(empty)* | API key for Brave, Tavily, or Jina search providers |
 | `home_assistant.enabled` | No | `false` | Expose Home Assistant's built-in MCP Server to all agents |
@@ -134,11 +135,26 @@ You can define **multiple independent agent instances**, each with its own model
 
 ## Web interface
 
-The agent gateway UI is available at:
+The add-on includes a built-in chat UI powered by nanobot's WebUI.
+
+**Access via Home Assistant:**
+
+- **Sidebar**: click the **AI Agents** entry (added automatically).
+- **Add-on page**: click **Open Web UI** on the add-on's Info tab.
+
+**Direct access** (from any device on the LAN):
 
 ```
-http://<your-ha-ip>:18790
+http://<your-ha-ip>:8765
 ```
+
+Log in with the password set in `webui_password`. If you leave `webui_password`
+empty, a random password is generated on each start — check the add-on logs
+to find it.
+
+When running multiple agents, the sidebar and "Open Web UI" button open the
+first agent's chat UI. Additional agents are available on consecutive ports
+(8766, 8767, …).
 
 ---
 

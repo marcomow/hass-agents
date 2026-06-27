@@ -1,5 +1,5 @@
 name: "AI Agents"
-version: "0.5.14"
+version: "0.5.15"
 slug: agent
 description: >-
   Ultra-lightweight personal AI agents with multi-channel support (Telegram,
@@ -14,6 +14,12 @@ startup: application
 boot: auto
 init: false
 homeassistant_api: true
+ingress: true
+ingress_port: 8765
+ports:
+  "8765/tcp": null
+ports_description:
+  "8765/tcp": "WebUI (first agent)"
 
 map:
   - type: data
@@ -24,6 +30,7 @@ panel_title: AI Agents
 
 options:
   timezone: "UTC"
+  webui_password: ""
   web_search_provider: "duckduckgo"
   web_search_api_key: ""
   home_assistant:
@@ -48,6 +55,7 @@ options:
 
 schema:
   timezone: str
+  webui_password: "password?"
   web_search_provider: "str?"
   web_search_api_key: "password?"
   home_assistant:
