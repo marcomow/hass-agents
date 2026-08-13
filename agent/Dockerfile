@@ -12,7 +12,7 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Install the agent package
-RUN uv pip install --system --no-cache nanobot-ai==0.2.2
+RUN uv pip install --system --no-cache nanobot-ai==0.3.0
 
 # Patch nanobot WebUI for Home Assistant ingress (absolute → relative paths)
 COPY patches/ingress_fix.py /tmp/ingress_fix.py
@@ -26,7 +26,7 @@ COPY run.sh /run.sh
 RUN chmod a+x /run.sh
 
 LABEL \
-    io.hass.version="0.2.2" \
+    io.hass.version="0.3.0" \
     io.hass.type="addon" \
     io.hass.arch="aarch64|amd64"
 
