@@ -27,9 +27,9 @@ jobs:
         id: bump
         run: python3 .github/scripts/bump_nanobot.py
 
-      # Apply patches/ingress_fix.py to the new release and confirm both
-      # targets were patched, so a PR never silently ships a broken WebUI.
-      - name: Verify ingress patch against new release
+      # Apply the build-time patches to the new release and confirm they still
+      # apply, so a PR never silently ships a broken WebUI or a failing build.
+      - name: Verify patches against new release
         id: patch
         if: steps.bump.outputs.updated == 'true'
         run: |
@@ -41,6 +41,8 @@ jobs:
           PYTHONPATH="$work/pkg" python3 agent/patches/ingress_fix.py 2>&1 | tee "$work/log" || status=failed
           grep -q "hassio_ingress" "$work/pkg/nanobot/web/dist/index.html" || status=failed
           grep -q "X-Ingress-Path" "$work/pkg/nanobot/webui/ws_http.py" || status=failed
+          PYTHONPATH="$work/pkg" python3 agent/patches/group_listen.py 2>&1 | tee -a "$work/log" || status=failed
+          PYTHONPATH="$work/pkg" python3 agent/patches/system_messages.py 2>&1 | tee -a "$work/log" || status=failed
           echo "status=$status" >> "$GITHUB_OUTPUT"
           {
             echo 'log<<EOF'
@@ -66,7 +68,7 @@ jobs:
             - `nanobot-ai` ${{ steps.bump.outputs.old_nanobot }} → **${{ steps.bump.outputs.new_nanobot }}** (`agent/Dockerfile`)
             - Add-on ${{ steps.bump.outputs.old_addon }} → **${{ steps.bump.outputs.new_addon }}** (`agent/config.yaml`)
 
-            Ingress patch check: **${{ steps.patch.outputs.status == 'ok' && '✅ applies cleanly' || '❌ FAILED — update agent/patches/ingress_fix.py before merging' }}**
+            Patch check (`agent/patches/`): **${{ steps.patch.outputs.status == 'ok' && '✅ all patches apply cleanly' || '❌ FAILED — update agent/patches/ before merging' }}**
 
             ```
             ${{ steps.patch.outputs.log }}

@@ -161,6 +161,19 @@ for idx, agent_opts in enumerate(agents):
             "token":     telegram_token,
             "allowFrom": allow_from if allow_from else ["*"],
         }
+        # Groups: "mention" (default) = only @mentions / replies reach the agent.
+        # "listen" = read every group message, reply only when addressed
+        # (implemented by patches/group_listen.py on top of groupPolicy "open").
+        group_mode = (agent_opts.get("telegram_group_mode") or "mention").strip()
+        if group_mode == "listen":
+            config["channels"]["telegram"]["groupPolicy"] = "open"
+            # Streamed drafts would leak text before a suppressed reply is dropped.
+            config["channels"]["telegram"]["streaming"] = False
+            # With streaming off, the model's text before each tool call is sent
+            # as a progress message, and tool hints go out the same way; both
+            # would reach the group even when the final reply is suppressed.
+            config["channels"]["telegram"]["sendProgress"] = False
+            config["channels"]["telegram"]["sendToolHints"] = False
 
     # Discord
     discord_token = agent_opts.get("discord_token", "").strip()
@@ -249,6 +262,14 @@ for idx, agent_opts in enumerate(agents):
             if "tools" not in config:
                 config["tools"] = {}
             config["tools"]["mcpServers"] = mcp_cfg
+
+    # System notices ("Compressing context…", "Context compacted."): the WebUI
+    # keeps them; chat channels only get them when show_system_messages is on.
+    # Implemented by patches/system_messages.py (per-channel sendSystemMessages).
+    show_system = bool(agent_opts.get("show_system_messages", False))
+    for ch_name, ch_cfg in config["channels"].items():
+        if isinstance(ch_cfg, dict):
+            ch_cfg["sendSystemMessages"] = True if ch_name == "websocket" else show_system
 
     config_path = os.path.join(config_dir, "config.json")
     with open(config_path, "w") as f:
