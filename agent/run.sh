@@ -131,7 +131,12 @@ for idx, agent_opts in enumerate(agents):
                 "host": "0.0.0.0",
                 "port": webui_port,
                 "tokenIssueSecret": token_issue_secret,
+                # The WebUI is a debugging surface: keep tool hints visible there.
+                "sendToolHints": True,
             },
+            # Chat channels (Telegram, Discord, Slack) inherit this: tool-call
+            # hints like `read_file("…")` are noise for end users, so off by default.
+            "sendToolHints": bool(agent_opts.get("show_tool_hints", False)),
         },
     }
 
@@ -226,9 +231,12 @@ for idx, agent_opts in enumerate(agents):
             url = (server.get("url") or "").strip()
             if url:
                 srv["url"] = url
+            headers = server.get("headers")
+            if isinstance(headers, dict) and headers:
+                srv["headers"] = {str(k): str(v) for k, v in headers.items()}
             api_key_mcp = (server.get("api_key") or "").strip()
             if api_key_mcp:
-                srv["headers"] = {"Authorization": f"Bearer {api_key_mcp}"}
+                srv.setdefault("headers", {})["Authorization"] = f"Bearer {api_key_mcp}"
             raw_tools = (server.get("enabled_tools") or "").strip()
             enabled_tools = [t.strip() for t in raw_tools.split(",") if t.strip()]
             if enabled_tools:
