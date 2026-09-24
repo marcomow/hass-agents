@@ -16,6 +16,9 @@ import urllib.error
 OPTIONS_PATH = "/data/options.json"
 BASE_PORT    = 18790
 WEBUI_BASE_PORT = 8765
+# Internal Supervisor network (Supervisor, HA Core, other add-ons). nanobot blocks
+# private ranges by default (SSRF guard), which would reject these hosts.
+HASSIO_NETWORK = "172.30.32.0/23"
 
 try:
     with open(OPTIONS_PATH) as f:
@@ -37,29 +40,28 @@ if not token_issue_secret:
 
 # Home Assistant integration (opt-in): expose HA's built-in MCP Server to agents.
 # Requires the "Model Context Protocol Server" integration enabled in Home Assistant.
-# The URL is always the internal supervisor proxy. The token defaults to the
-# Supervisor-provided token, but the HA MCP Server requires a regular HA user token
-# (long-lived access token) — set home_assistant.token if the supervisor token is
-# rejected (HTTP 403).
+# HA serves MCP over Streamable HTTP at /api/mcp.
+#  - With a Long-Lived Access Token: talk to HA Core directly. The Supervisor
+#    proxy only accepts add-on tokens, so an LLAT sent through it gets a 401.
+#  - Without one: go through the Supervisor proxy with the add-on's own token.
+#    The proxy only forwards /core/api/*, so the legacy /mcp_server/sse endpoint
+#    is not reachable this way.
 ha_opts = opts.get("home_assistant") or {}
 if ha_opts.get("enabled"):
-    ha_url   = "http://supervisor/core/mcp_server/sse"
-    ha_token = (ha_opts.get("token") or "").strip() or os.environ.get("SUPERVISOR_TOKEN", "")
+    user_token = (ha_opts.get("token") or "").strip()
+    if user_token:
+        ha_url, ha_token = "http://homeassistant:8123/api/mcp", user_token
+    else:
+        ha_url, ha_token = "http://supervisor/core/api/mcp", os.environ.get("SUPERVISOR_TOKEN", "")
     if not ha_token:
         print("[agent] WARNING: Home Assistant integration enabled but no token available. "
               "Set home_assistant.token to a Long-Lived Access Token from HA "
               "(Profile → Security → Long-lived access tokens).",
               file=sys.stderr)
     else:
-        using_supervisor_token = not (ha_opts.get("token") or "").strip()
-        if using_supervisor_token:
-            print("[agent] WARNING: home_assistant.token is not set — falling back to the "
-                  "Supervisor token, which does not have access to the MCP Server integration. "
-                  "Create a Long-Lived Access Token in HA (Profile → Security → "
-                  "Long-lived access tokens) and set it as home_assistant.token.",
-                  file=sys.stderr)
         global_mcp_servers.append({
             "name":    "home_assistant",
+            "type":    "streamableHttp",
             "url":     ha_url,
             "api_key": ha_token,
         })
@@ -182,6 +184,8 @@ for idx, agent_opts in enumerate(agents):
             search_cfg["apiKey"] = search_api_key
         config["tools"] = {"web": {"search": search_cfg}}
 
+    config.setdefault("tools", {})["ssrfWhitelist"] = [HASSIO_NETWORK]
+
     # MCP servers: filter global list by agent's mcp_server_names (empty = all), then merge JSON override
     allowed = [n.strip() for n in (agent_opts.get("mcp_server_names") or "").split(",") if n.strip()]
     mcp_servers = [s for s in global_mcp_servers if not allowed or s.get("name") in allowed]
@@ -209,6 +213,9 @@ for idx, agent_opts in enumerate(agents):
             if not srv_name:
                 continue
             srv = {}
+            transport = (server.get("type") or "").strip()
+            if transport:
+                srv["type"] = transport
             command = (server.get("command") or "").strip()
             if command:
                 srv["command"] = command

@@ -18,7 +18,7 @@ Powered by [nanobot](https://github.com/HKUDS/nanobot).
 | `web_search_provider` | No | `duckduckgo` | Web search backend: `duckduckgo`, `brave`, `tavily`, `jina`, `searxng` |
 | `web_search_api_key` | No | *(empty)* | API key for Brave, Tavily, or Jina search providers |
 | `home_assistant.enabled` | No | `false` | Expose Home Assistant's built-in MCP Server to all agents |
-| `home_assistant.token` | No | *(auto)* | Long-Lived Access Token — required if the default Supervisor token is rejected (HTTP 403) |
+| `home_assistant.token` | No | *(auto)* | Long-Lived Access Token — recommended; connects directly to HA Core instead of via the Supervisor proxy |
 
 ### Home Assistant integration
 
@@ -35,14 +35,24 @@ Server.
    Assist exposed-entities settings).
 3. In this add-on, set `home_assistant.enabled: true` and restart.
 
-The add-on connects automatically through the internal Supervisor proxy — no
-URL configuration is needed. Authentication defaults to the Supervisor token,
-which works in most setups. If the add-on logs an **HTTP 403** error at
-startup, the HA MCP Server integration requires a regular user token instead:
+No URL configuration is needed. The add-on connects to HA's MCP endpoint
+(`/api/mcp`, Streamable HTTP) in one of two ways:
+
+- **With `home_assistant.token` set (recommended):** directly to HA Core at
+  `http://homeassistant:8123/api/mcp`, authenticated as the user who owns the
+  token.
+- **Without a token:** through the internal Supervisor proxy
+  (`http://supervisor/core/api/mcp`) using the add-on's own Supervisor token.
+
+To create a token:
 
 1. In HA, go to your **Profile → Security → Long-lived access tokens**.
 2. Create a new token and copy it.
 3. Paste it into `home_assistant.token` and restart the add-on.
+
+If agents still can't see Home Assistant tools, check the add-on log for a
+`MCP server 'home_assistant': ...` warning — it names the cause (unreachable,
+blocked URL, or an HTTP auth error).
 
 To restrict the integration to specific agents, list them in each agent's
 **Active MCP Servers** field (the server name is `home_assistant`).
@@ -67,6 +77,7 @@ Supported JSON config fields:
 | `command` | No* | Executable for stdio transport (e.g. `npx`, `uvx`) |
 | `args` | No | Space-separated command arguments |
 | `url` | No* | HTTP/SSE endpoint for a remote MCP server |
+| `type` | No | Transport: `stdio`, `sse` or `streamableHttp` — auto-detected if omitted |
 | `api_key` | No | Bearer token sent as the `Authorization` header |
 | `enabled_tools` | No | Comma-separated tool names to expose — omit for all |
 | `tool_timeout` | No | Per-call timeout in seconds |
