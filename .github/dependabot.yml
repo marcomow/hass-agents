@@ -1,0 +1,9 @@
+version: 2
+updates:
+  # Keeps the actions used by .github/workflows up to date.
+  # nanobot-ai itself is bumped by .github/workflows/bump-nanobot.yml, since
+  # Dependabot can't update a pip pin inside a Dockerfile or the add-on version.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
