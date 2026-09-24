@@ -161,6 +161,14 @@ for idx, agent_opts in enumerate(agents):
             "token":     telegram_token,
             "allowFrom": allow_from if allow_from else ["*"],
         }
+        # Groups: "mention" (default) = only @mentions / replies reach the agent.
+        # "listen" = read every group message, reply only when addressed
+        # (implemented by patches/group_listen.py on top of groupPolicy "open").
+        group_mode = (agent_opts.get("telegram_group_mode") or "mention").strip()
+        if group_mode == "listen":
+            config["channels"]["telegram"]["groupPolicy"] = "open"
+            # Streamed drafts would leak text before a suppressed reply is dropped.
+            config["channels"]["telegram"]["streaming"] = False
 
     # Discord
     discord_token = agent_opts.get("discord_token", "").strip()

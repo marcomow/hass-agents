@@ -125,3 +125,11 @@ configuration:
     description: >-
       Post a short hint in Telegram/Discord/Slack each time the agent calls a tool
       (e.g. `read_file("…")`). Off by default; the WebUI always shows them.
+  agents_telegram_group_mode:
+    name: Telegram group mode
+    description: >-
+      "mention" (default): in groups the agent only sees messages that @mention it
+      or reply to it. "listen": it reads every group message from allowed users and
+      can act on them (e.g. file a task), but only replies when @mentioned or replied
+      to. For "listen", disable privacy mode in @BotFather (/setprivacy) and re-add the
+      bot to the group.
