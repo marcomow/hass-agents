@@ -29,7 +29,9 @@ configuration:
   home_assistant_token:
     name: Home Assistant Token
     description: >-
-      Long-lived access token for the HA MCP Server. To create one: open your
+      Long-lived access token for the HA MCP Server (recommended). When set,
+      agents connect directly to HA Core instead of via the Supervisor proxy.
+      To create one: open your
       HA profile at [/profile/security](/profile/security), scroll to
       "Long-lived access tokens", click Create Token, give it a name (e.g.
       "AI Agents"), then copy and paste it here.
