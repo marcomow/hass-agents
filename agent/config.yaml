@@ -55,6 +55,7 @@ options:
       mcp_servers_json: ""
       show_tool_hints: false
       telegram_group_mode: mention
+      show_system_messages: false
 
 schema:
   timezone: str
@@ -86,4 +87,5 @@ schema:
       mcp_servers_json: "str?"
       show_tool_hints: "bool?"
       telegram_group_mode: "list(mention|listen)?"
+      show_system_messages: "bool?"
 

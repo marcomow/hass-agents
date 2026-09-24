@@ -263,6 +263,14 @@ for idx, agent_opts in enumerate(agents):
                 config["tools"] = {}
             config["tools"]["mcpServers"] = mcp_cfg
 
+    # System notices ("Compressing context…", "Context compacted."): the WebUI
+    # keeps them; chat channels only get them when show_system_messages is on.
+    # Implemented by patches/system_messages.py (per-channel sendSystemMessages).
+    show_system = bool(agent_opts.get("show_system_messages", False))
+    for ch_name, ch_cfg in config["channels"].items():
+        if isinstance(ch_cfg, dict):
+            ch_cfg["sendSystemMessages"] = True if ch_name == "websocket" else show_system
+
     config_path = os.path.join(config_dir, "config.json")
     with open(config_path, "w") as f:
         json.dump(config, f, indent=2)

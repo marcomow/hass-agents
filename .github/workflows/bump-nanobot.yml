@@ -42,6 +42,7 @@ jobs:
           grep -q "hassio_ingress" "$work/pkg/nanobot/web/dist/index.html" || status=failed
           grep -q "X-Ingress-Path" "$work/pkg/nanobot/webui/ws_http.py" || status=failed
           PYTHONPATH="$work/pkg" python3 agent/patches/group_listen.py 2>&1 | tee -a "$work/log" || status=failed
+          PYTHONPATH="$work/pkg" python3 agent/patches/system_messages.py 2>&1 | tee -a "$work/log" || status=failed
           echo "status=$status" >> "$GITHUB_OUTPUT"
           {
             echo 'log<<EOF'

@@ -133,3 +133,8 @@ configuration:
       can act on them (e.g. file a task), but only replies when @mentioned or replied
       to; progress messages and tool hints are turned off in Telegram. For "listen",
       disable privacy mode in @BotFather (/setprivacy) and re-add the bot to the group.
+  agents_show_system_messages:
+    name: Show system messages in chat
+    description: >-
+      Post system notices such as "Compressing context…" and "Context compacted."
+      in Telegram/Discord/Slack. Off by default; the WebUI always shows them.
