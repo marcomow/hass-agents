@@ -18,6 +18,22 @@ After this patch, groupPolicy "open" means "listen quietly":
 
 Private chats and the "mention" policy are unchanged.
 
+Reply protocol (all Telegram chats, both policies):
+  * a final reply of exactly ``NOTED`` sends no message; the bot reacts 👌 to
+    the user's message instead (a quiet "done");
+  * a final reply of exactly ``NO_REPLY`` sends nothing;
+  * for an unaddressed group message the reply is dropped UNLESS it is
+    ``NOTED`` (-> 👌) or starts with ``SAY:`` (the rest is posted - used to
+    confirm or ask when the agent is unsure). Silence is the default.
+
+If a message that addresses the bot arrives while an unaddressed turn in the
+same chat is still running, nanobot injects it into that turn; once the turn
+has actually read it in, the turn counts as addressed, so the reply to the
+@mention is not lost, and the 👀 on the @mention is cleared (NOTED reacts 👌
+on the @mention). A mention that arrives too late to be merged is re-queued
+by nanobot as its own turn instead. A leading SAY: is stripped from any
+group reply, addressed or not.
+
 Run once after ``pip install nanobot-ai``. Fails loudly if the upstream code
 changed, so a nanobot bump cannot silently ship without the patch.
 """
@@ -37,9 +53,10 @@ if NANOBOT_ROOT is None:
     sys.exit(1)
 
 UNADDRESSED_NOTE = (
-    "[Group message not addressed to you. Do not reply. If it contains something "
-    "actionable for the family (a task, a date, something to buy, a decision), "
-    "file it silently; otherwise do nothing.]"
+    "[Overheard group message, not addressed to you. If it holds a clear decision or "
+    "commitment (a task, a date, something to buy), file it and answer exactly NOTED. "
+    "If you are unsure what was meant, answer SAY: followed by one short question. "
+    "Otherwise answer exactly NO_REPLY.]"
 )
 
 
@@ -107,10 +124,61 @@ patch(
     ],
 )
 
-# --- 2. Agent loop: never deliver the final reply to an unaddressed group message.
+# --- 1b. Telegram send: turn NOTED into a 👌 reaction, drop NO_REPLY, and clear
+#         the 👀 left on @mentions that were merged into this turn.
+patch(
+    NANOBOT_ROOT / "channels" / "telegram" / "runtime.py",
+    [
+        (
+            "        if progress_event is None:\n"
+            "            self._stop_typing(msg.chat_id)\n"
+            '            if reply_to_message_id := msg.metadata.get("message_id"):\n'
+            "                with suppress(ValueError):\n"
+            "                    await self._remove_reaction(msg.chat_id, int(reply_to_message_id))\n",
+            "        if progress_event is None:\n"
+            "            self._stop_typing(msg.chat_id)\n"
+            '            if reply_to_message_id := msg.metadata.get("message_id"):\n'
+            "                with suppress(ValueError):\n"
+            "                    await self._remove_reaction(msg.chat_id, int(reply_to_message_id))\n"
+            "            _gl_merged = [m for m in (msg.metadata.get('_gl_merged_mention_ids') or []) if m]\n"
+            "            for _gl_mid in _gl_merged:\n"
+            "                with suppress(ValueError):\n"
+            "                    await self._remove_reaction(msg.chat_id, int(_gl_mid))\n"
+            "            _gl_text = (msg.content or '').strip().upper()\n"
+            "            if _gl_text in ('NOTED', 'NO_REPLY') and not msg.media:\n"
+            "                _gl_target = _gl_merged[-1] if _gl_merged else msg.metadata.get('message_id')\n"
+            "                if _gl_text == 'NOTED' and _gl_target:\n"
+            "                    with suppress(ValueError):\n"
+            "                        await self._add_reaction(\n"
+            "                            msg.chat_id, int(_gl_target), '\U0001F44C'\n"
+            "                        )\n"
+            "                return\n",
+        ),
+    ],
+)
+
+# --- 2. Agent loop: decide what an unaddressed group turn may send.
 patch(
     NANOBOT_ROOT / "agent" / "loop.py",
     [
+        # Record @mentions actually merged into a running turn (keyed by turn id).
+        # Recording at merge time, not at queue time, matters: a mention that
+        # arrives too late is re-published as its own turn and must not make
+        # the overheard turn count as addressed.
+        (
+            "                followup_id = metadata.get(PENDING_FOLLOWUP_ID_KEY)\n"
+            "                if isinstance(followup_id, str) and followup_id:\n"
+            "                    row[PENDING_FOLLOWUP_ID_KEY] = followup_id\n"
+            "                return row\n",
+            "                followup_id = metadata.get(PENDING_FOLLOWUP_ID_KEY)\n"
+            "                if isinstance(followup_id, str) and followup_id:\n"
+            "                    row[PENDING_FOLLOWUP_ID_KEY] = followup_id\n"
+            "                if metadata.get('addressed_to_bot') is True and request_ctx.turn_id:\n"
+            "                    self.__dict__.setdefault('_gl_merged_mentions', {}).setdefault(\n"
+            "                        request_ctx.turn_id, []\n"
+            "                    ).append(metadata.get('message_id'))\n"
+            "                return row\n",
+        ),
         (
             "    async def _prepare_outbound(self, ctx: TurnContext) -> None:\n"
             "        ctx.delivery.record_stop_reason(\n"
@@ -122,11 +190,22 @@ patch(
             "            ctx.stop_reason,\n"
             "            failure_error_kind=ctx.failure_error_kind,\n"
             "        )\n"
-            "        if (\n"
-            "            ctx.kind is TurnKind.USER\n"
-            '            and (ctx.msg.metadata or {}).get("addressed_to_bot") is False\n'
-            "        ):\n"
-            "            ctx.suppress_response = True\n",
+            "        _gl_merged = self.__dict__.get('_gl_merged_mentions', {}).pop(ctx.turn_id, None) or []\n"
+            "        if _gl_merged:\n"
+            "            # Lets Telegram clear the 👀 on those mentions and react on them.\n"
+            "            ctx.delivery.delivery_message.metadata['_gl_merged_mention_ids'] = _gl_merged\n"
+            "        if ctx.kind is TurnKind.USER and 'addressed_to_bot' in (ctx.msg.metadata or {}):\n"
+            "            _gl_final = (ctx.final_content or '').strip()\n"
+            "            _gl_say = _gl_final[:4].upper() == 'SAY:' and bool(_gl_final[4:].strip())\n"
+            "            if _gl_say:\n"
+            "                ctx.final_content = _gl_final[4:].strip()\n"
+            "            if (\n"
+            "                ctx.msg.metadata.get('addressed_to_bot') is False\n"
+            "                and not _gl_merged\n"
+            "                and not _gl_say\n"
+            "                and _gl_final.upper() != 'NOTED'\n"
+            "            ):\n"
+            "                ctx.suppress_response = True\n",
         ),
     ],
 )
