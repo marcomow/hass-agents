@@ -18,6 +18,18 @@ After this patch, groupPolicy "open" means "listen quietly":
 
 Private chats and the "mention" policy are unchanged.
 
+Reply protocol (all Telegram chats, both policies):
+  * a final reply of exactly ``NOTED`` sends no message; the bot reacts 👌 to
+    the user's message instead (a quiet "done");
+  * a final reply of exactly ``NO_REPLY`` sends nothing;
+  * for an unaddressed group message the reply is dropped UNLESS it is
+    ``NOTED`` (-> 👌) or starts with ``SAY:`` (the rest is posted - used to
+    confirm or ask when the agent is unsure). Silence is the default.
+
+If a message that addresses the bot arrives while an unaddressed turn in the
+same chat is still running, nanobot injects it into that turn; the turn then
+counts as addressed, so the reply to the @mention is not lost.
+
 Run once after ``pip install nanobot-ai``. Fails loudly if the upstream code
 changed, so a nanobot bump cannot silently ship without the patch.
 """
@@ -37,9 +49,10 @@ if NANOBOT_ROOT is None:
     sys.exit(1)
 
 UNADDRESSED_NOTE = (
-    "[Group message not addressed to you. Do not reply. If it contains something "
-    "actionable for the family (a task, a date, something to buy, a decision), "
-    "file it silently; otherwise do nothing.]"
+    "[Overheard group message, not addressed to you. If it holds a clear decision or "
+    "commitment (a task, a date, something to buy), file it and answer exactly NOTED. "
+    "If you are unsure what was meant, answer SAY: followed by one short question. "
+    "Otherwise answer exactly NO_REPLY.]"
 )
 
 
@@ -107,10 +120,48 @@ patch(
     ],
 )
 
-# --- 2. Agent loop: never deliver the final reply to an unaddressed group message.
+# --- 1b. Telegram send: turn NOTED into a 👌 reaction, drop NO_REPLY.
+patch(
+    NANOBOT_ROOT / "channels" / "telegram" / "runtime.py",
+    [
+        (
+            "        if progress_event is None:\n"
+            "            self._stop_typing(msg.chat_id)\n"
+            '            if reply_to_message_id := msg.metadata.get("message_id"):\n'
+            "                with suppress(ValueError):\n"
+            "                    await self._remove_reaction(msg.chat_id, int(reply_to_message_id))\n",
+            "        if progress_event is None:\n"
+            "            self._stop_typing(msg.chat_id)\n"
+            '            if reply_to_message_id := msg.metadata.get("message_id"):\n'
+            "                with suppress(ValueError):\n"
+            "                    await self._remove_reaction(msg.chat_id, int(reply_to_message_id))\n"
+            "            _gl_text = (msg.content or '').strip().upper()\n"
+            "            if _gl_text in ('NOTED', 'NO_REPLY') and not msg.media:\n"
+            "                if _gl_text == 'NOTED' and msg.metadata.get('message_id'):\n"
+            "                    with suppress(ValueError):\n"
+            "                        await self._add_reaction(\n"
+            "                            msg.chat_id, int(msg.metadata['message_id']), '\U0001F44C'\n"
+            "                        )\n"
+            "                return\n",
+        ),
+    ],
+)
+
+# --- 2. Agent loop: decide what an unaddressed group turn may send.
 patch(
     NANOBOT_ROOT / "agent" / "loop.py",
     [
+        # An @mention routed into a running turn makes that turn addressed.
+        (
+            "                    pending_msg = routed_msg\n"
+            "                    session = self.sessions.get_or_create(effective_key)\n",
+            "                    pending_msg = routed_msg\n"
+            '                    if (pending_msg.metadata or {}).get("addressed_to_bot") is True:\n'
+            "                        if not hasattr(self, '_gl_addressed_followups'):\n"
+            "                            self._gl_addressed_followups = set()\n"
+            "                        self._gl_addressed_followups.add(effective_key)\n"
+            "                    session = self.sessions.get_or_create(effective_key)\n",
+        ),
         (
             "    async def _prepare_outbound(self, ctx: TurnContext) -> None:\n"
             "        ctx.delivery.record_stop_reason(\n"
@@ -122,11 +173,21 @@ patch(
             "            ctx.stop_reason,\n"
             "            failure_error_kind=ctx.failure_error_kind,\n"
             "        )\n"
+            "        _gl_followups = getattr(self, '_gl_addressed_followups', None)\n"
+            "        _gl_keys = {getattr(ctx, 'session_key', None), getattr(ctx.msg, 'session_key', None)}\n"
+            "        _gl_addressed_later = bool(_gl_followups and (_gl_followups & _gl_keys))\n"
+            "        if _gl_followups:\n"
+            "            _gl_followups.difference_update(_gl_keys)\n"
             "        if (\n"
             "            ctx.kind is TurnKind.USER\n"
             '            and (ctx.msg.metadata or {}).get("addressed_to_bot") is False\n'
+            "            and not _gl_addressed_later\n"
             "        ):\n"
-            "            ctx.suppress_response = True\n",
+            "            _gl_final = (ctx.final_content or '').strip()\n"
+            "            if _gl_final[:4].upper() == 'SAY:' and _gl_final[4:].strip():\n"
+            "                ctx.final_content = _gl_final[4:].strip()\n"
+            "            elif _gl_final.upper() != 'NOTED':\n"
+            "                ctx.suppress_response = True\n",
         ),
     ],
 )
