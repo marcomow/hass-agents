@@ -120,6 +120,8 @@ configuration:
       on top of the global MCP Servers list — same name overrides a global entry,
       new names are added only for this agent. Use the top-level MCP Servers list
       for normal configuration. Example: [{"name":"github","url":"https://api.example.com/mcp/"}]
-
-
-
+  agents_show_tool_hints:
+    name: Show tool calls in chat
+    description: >-
+      Post a short hint in Telegram/Discord/Slack each time the agent calls a tool
+      (e.g. `read_file("…")`). Off by default; the WebUI always shows them.
