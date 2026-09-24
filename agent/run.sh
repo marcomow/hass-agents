@@ -169,6 +169,11 @@ for idx, agent_opts in enumerate(agents):
             config["channels"]["telegram"]["groupPolicy"] = "open"
             # Streamed drafts would leak text before a suppressed reply is dropped.
             config["channels"]["telegram"]["streaming"] = False
+            # With streaming off, the model's text before each tool call is sent
+            # as a progress message, and tool hints go out the same way; both
+            # would reach the group even when the final reply is suppressed.
+            config["channels"]["telegram"]["sendProgress"] = False
+            config["channels"]["telegram"]["sendToolHints"] = False
 
     # Discord
     discord_token = agent_opts.get("discord_token", "").strip()

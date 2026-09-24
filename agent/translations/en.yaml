@@ -131,5 +131,5 @@ configuration:
       "mention" (default): in groups the agent only sees messages that @mention it
       or reply to it. "listen": it reads every group message from allowed users and
       can act on them (e.g. file a task), but only replies when @mentioned or replied
-      to. For "listen", disable privacy mode in @BotFather (/setprivacy) and re-add the
-      bot to the group.
+      to; progress messages and tool hints are turned off in Telegram. For "listen",
+      disable privacy mode in @BotFather (/setprivacy) and re-add the bot to the group.

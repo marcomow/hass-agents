@@ -103,7 +103,7 @@ You can define **multiple independent agent instances**, each with its own model
 | `mcp_server_names` | No | *(empty)* | Comma-separated names of global MCP servers to activate — leave empty to use all (e.g. `github,filesystem`) |
 | `mcp_servers_json` | No | *(empty)* | Advanced: per-agent JSON overrides merged on top of global MCP Servers |
 | `show_tool_hints` | No | `false` | Post tool-call hints (e.g. `read_file("…")`) in chat channels. The WebUI always shows them |
-| `telegram_group_mode` | No | `mention` | `mention`: in groups, only @mentions and replies reach the agent. `listen`: it reads every group message from allowed users and acts silently, replying only when addressed (needs BotFather privacy mode off) |
+| `telegram_group_mode` | No | `mention` | `mention`: in groups, only @mentions and replies reach the agent. `listen`: it reads every group message from allowed users and acts silently, replying only when addressed (needs BotFather privacy mode off). Telegram progress messages and tool hints are turned off in this mode |
 
 ---
 
