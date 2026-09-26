@@ -133,6 +133,12 @@ configuration:
       can act on them (e.g. file a task), but only replies when @mentioned or replied
       to; progress messages and tool hints are turned off in Telegram. For "listen",
       disable privacy mode in @BotFather (/setprivacy) and re-add the bot to the group.
+  agents_telegram_wake_words:
+    name: Telegram wake words
+    description: >-
+      Listen mode only. Comma-separated names (e.g. "carson, butler"). A group
+      message that contains one of them as a whole word — in text, a caption or a
+      transcribed voice message — is treated like an @mention and gets a reply.
   agents_show_system_messages:
     name: Show system messages in chat
     description: >-

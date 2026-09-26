@@ -1,5 +1,5 @@
 name: "AI Agents"
-version: "0.5.23"
+version: "0.5.24"
 slug: agent
 description: >-
   Ultra-lightweight personal AI agents with multi-channel support (Telegram,
@@ -55,6 +55,7 @@ options:
       mcp_servers_json: ""
       show_tool_hints: false
       telegram_group_mode: mention
+      telegram_wake_words: ""
       show_system_messages: false
 
 schema:
@@ -87,5 +88,6 @@ schema:
       mcp_servers_json: "str?"
       show_tool_hints: "bool?"
       telegram_group_mode: "list(mention|listen)?"
+      telegram_wake_words: "str?"
       show_system_messages: "bool?"
 

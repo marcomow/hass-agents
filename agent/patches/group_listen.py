@@ -16,6 +16,11 @@ After this patch, groupPolicy "open" means "listen quietly":
     suppressed - the turn still runs, so tools (e.g. creating a task) work;
   * messages that do address the bot behave exactly as before.
 
+Wake words: with the environment variable ``NANOBOT_WAKE_WORDS`` (comma-separated,
+e.g. "carson,butler"), a group message whose own text, caption or voice
+transcription contains one of them as a whole word (any case) is treated as
+addressed, exactly like an @mention.
+
 Private chats and the "mention" policy are unchanged.
 
 Reply protocol (all Telegram chats, both policies):
@@ -99,6 +104,17 @@ patch(
             "        metadata = self._build_message_metadata(message, user)\n"
             "        session_key = self._derive_topic_session_key(message)\n",
             "        metadata = self._build_message_metadata(message, user)\n"
+            # Wake words (NANOBOT_WAKE_WORDS, comma-separated): a group message whose
+            # own text, caption or voice transcription names the bot counts as
+            # addressed, like an @mention. Reply context is not checked.
+            "        if not addressed and message.chat.type != 'private':\n"
+            "            _gl_words = [w.strip() for w in __import__('os').environ.get('NANOBOT_WAKE_WORDS', '').split(',') if w.strip()]\n"
+            "            _gl_own = '\\n'.join([message.text or '', message.caption or ''] + list(current_media_parts))\n"
+            "            if _gl_words and re.search(\n"
+            "                r'(?<!\\w)(?:' + '|'.join(re.escape(w) for w in _gl_words) + r')(?!\\w)',\n"
+            "                _gl_own, re.IGNORECASE,\n"
+            "            ):\n"
+            "                addressed = True\n"
             '        metadata["addressed_to_bot"] = addressed\n'
             "        if not addressed:\n"
             f"            content = {UNADDRESSED_NOTE!r} + \"\\n\" + content\n"
