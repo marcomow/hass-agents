@@ -22,6 +22,10 @@ RUN python3 /tmp/ingress_fix.py && rm /tmp/ingress_fix.py
 COPY patches/group_listen.py /tmp/group_listen.py
 RUN python3 /tmp/group_listen.py && rm /tmp/group_listen.py
 
+# Patch nanobot so the message tool can post into Telegram forum topics (<chat_id>:topic:<thread_id>)
+COPY patches/topic_send.py /tmp/topic_send.py
+RUN python3 /tmp/topic_send.py && rm /tmp/topic_send.py
+
 # Patch nanobot so context-compaction notices can be hidden per channel (show_system_messages)
 COPY patches/system_messages.py /tmp/system_messages.py
 RUN python3 /tmp/system_messages.py && rm /tmp/system_messages.py
