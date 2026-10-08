@@ -12,8 +12,8 @@ After this patch, groupPolicy "open" means "listen quietly":
   * every group message from an allowed sender reaches the agent;
   * messages that do not @mention the bot or reply to it are tagged
     (metadata ``addressed_to_bot = False`` plus a short note prepended to the
-    text), get no typing indicator or reaction, and their final reply is
-    suppressed - the turn still runs, so tools (e.g. creating a task) work;
+    text), get the 👀 reaction but no typing indicator, and their final reply
+    is suppressed - the turn still runs, so tools (e.g. creating a task) work;
   * messages that do address the bot behave exactly as before.
 
 Wake words: with the environment variable ``NANOBOT_WAKE_WORDS`` (comma-separated,
@@ -21,7 +21,14 @@ e.g. "carson,butler"), a group message whose own text, caption or voice
 transcription contains one of them as a whole word (any case) is treated as
 addressed, exactly like an @mention.
 
-Private chats and the "mention" policy are unchanged.
+Reactions: every message that reaches the agent gets 👀 while its turn runs.
+At the end the 👀 is removed; if the reply is NOTED it is replaced by the
+NOTED emoji. A suppressed turn (overheard, or the message tool already posted
+to that chat) still reaches the channel as a bare NOTED / NO_REPLY marker so
+the 👀 never sticks. Extra messages listed in ``_gl_extra_reaction_ids`` (the
+posted voice transcript) get the same treatment.
+
+Private chats and the "mention" policy are unchanged otherwise.
 
 Reply protocol (all Telegram chats, both policies):
   * a final reply of exactly ``NOTED`` sends no message; the bot reacts to the
@@ -125,13 +132,14 @@ patch(
             f"            content = {UNADDRESSED_NOTE!r} + \"\\n\" + content\n"
             "        session_key = self._derive_topic_session_key(message)\n",
         ),
-        # No typing indicator or reaction for messages the bot will not answer.
+        # Every message that reaches the agent gets the 👀 "processing" reaction;
+        # the typing indicator only for messages the bot will answer.
         (
             "                self._start_typing(str_chat_id)\n"
             "                await self._add_reaction(str_chat_id, message.message_id, self.config.react_emoji)\n",
             "                if addressed:\n"
             "                    self._start_typing(str_chat_id)\n"
-            "                    await self._add_reaction(str_chat_id, message.message_id, self.config.react_emoji)\n",
+            "                await self._add_reaction(str_chat_id, message.message_id, self.config.react_emoji)\n",
         ),
         (
             "        # Start typing indicator before processing\n"
@@ -140,7 +148,7 @@ patch(
             "        # Start typing indicator before processing\n"
             "        if addressed:\n"
             "            self._start_typing(str_chat_id)\n"
-            "            await self._add_reaction(str_chat_id, message.message_id, self.config.react_emoji)\n",
+            "        await self._add_reaction(str_chat_id, message.message_id, self.config.react_emoji)\n",
         ),
     ],
 )
@@ -162,20 +170,27 @@ patch(
             "                with suppress(ValueError):\n"
             "                    await self._remove_reaction(msg.chat_id, int(reply_to_message_id))\n"
             "            _gl_merged = [m for m in (msg.metadata.get('_gl_merged_mention_ids') or []) if m]\n"
-            "            for _gl_mid in _gl_merged:\n"
+            # Extra messages that carry this turn's 👀 (e.g. the posted voice transcript).
+            "            _gl_extra = [m for m in (msg.metadata.get('_gl_extra_reaction_ids') or []) if m]\n"
+            "            for _gl_mid in _gl_merged + _gl_extra:\n"
             "                with suppress(ValueError):\n"
             "                    await self._remove_reaction(msg.chat_id, int(_gl_mid))\n"
             "            _gl_text = (msg.content or '').strip().upper()\n"
             "            if _gl_text in ('NOTED', 'NO_REPLY') and not msg.media:\n"
             "                _gl_target = _gl_merged[-1] if _gl_merged else msg.metadata.get('message_id')\n"
-            "                if _gl_text == 'NOTED' and _gl_target:\n"
+            "                if _gl_text == 'NOTED':\n"
+            "                    _gl_targets = ([_gl_target] if _gl_target else []) + _gl_extra\n"
+            "                else:\n"
+            "                    _gl_targets = []\n"
+            "                if _gl_targets:\n"
             # NANOBOT_NOTED_EMOJI picks the reaction (default 👌). Telegram lists its
             # reaction emoji without the U+FE0F variation selector, so strip it.
             "                    _gl_emoji = (__import__('os').environ.get('NANOBOT_NOTED_EMOJI') or '\U0001F44C').replace('\ufe0f', '').strip() or '\U0001F44C'\n"
-            "                    with suppress(ValueError):\n"
-            "                        await self._add_reaction(\n"
-            "                            msg.chat_id, int(_gl_target), _gl_emoji\n"
-            "                        )\n"
+            "                    for _gl_t in _gl_targets:\n"
+            "                        with suppress(ValueError):\n"
+            "                            await self._add_reaction(\n"
+            "                                msg.chat_id, int(_gl_t), _gl_emoji\n"
+            "                            )\n"
             "                return\n",
         ),
     ],
@@ -237,7 +252,19 @@ patch(
             "                and not _gl_say\n"
             "                and _gl_final.upper() != 'NOTED'\n"
             "            ):\n"
-            "                ctx.suppress_response = True\n",
+            "                ctx.suppress_response = True\n"
+            # A suppressed Telegram turn (overheard, or the message tool already
+            # posted to this chat) still goes to the channel as a bare NOTED or
+            # NO_REPLY marker, so the 👀 is cleared or turned into the NOTED
+            # reaction. Session history was saved before this stage.
+            "        if (\n"
+            "            ctx.suppress_response\n"
+            "            and ctx.kind is TurnKind.USER\n"
+            "            and ctx.msg.channel == 'telegram'\n"
+            "        ):\n"
+            "            _gl_f = (ctx.final_content or '').strip().upper()\n"
+            "            ctx.final_content = 'NOTED' if _gl_f == 'NOTED' else 'NO_REPLY'\n"
+            "            ctx.suppress_response = False\n",
         ),
     ],
 )
