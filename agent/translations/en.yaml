@@ -139,6 +139,11 @@ configuration:
       Listen mode only. Comma-separated names (e.g. "carson, butler"). A group
       message that contains one of them as a whole word — in text, a caption or a
       transcribed voice message — is treated like an @mention and gets a reply.
+  agents_telegram_noted_emoji:
+    name: Telegram NOTED reaction
+    description: >-
+      Emoji the bot reacts with when it answers exactly NOTED (default 👌). Must be
+      one of Telegram's standard reaction emoji, e.g. 👌 👍 ✍ 🫡.
   agents_show_system_messages:
     name: Show system messages in chat
     description: >-

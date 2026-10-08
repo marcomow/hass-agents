@@ -24,12 +24,14 @@ addressed, exactly like an @mention.
 Private chats and the "mention" policy are unchanged.
 
 Reply protocol (all Telegram chats, both policies):
-  * a final reply of exactly ``NOTED`` sends no message; the bot reacts 👌 to
-    the user's message instead (a quiet "done");
+  * a final reply of exactly ``NOTED`` sends no message; the bot reacts to the
+    user's message instead (a quiet "done"; emoji from ``NANOBOT_NOTED_EMOJI``,
+    default 👌);
   * a final reply of exactly ``NO_REPLY`` sends nothing;
   * for an unaddressed group message the reply is dropped UNLESS it is
-    ``NOTED`` (-> 👌) or starts with ``SAY:`` (the rest is posted - used to
-    confirm or ask when the agent is unsure). Silence is the default.
+    ``NOTED`` (-> reaction), starts with ``SAY:`` (the rest is posted - used to
+    confirm or ask when the agent is unsure), or is a single short line ending
+    in "?" (a clarifying question sent without the prefix). Silence is the default.
 
 If a message that addresses the bot arrives while an unaddressed turn in the
 same chat is still running, nanobot injects it into that turn; once the turn
@@ -57,11 +59,14 @@ if NANOBOT_ROOT is None:
     print("[group_listen] ERROR: could not locate nanobot package", file=sys.stderr)
     sys.exit(1)
 
+# Plain text, no square brackets: bracketed preambles look like role spoofing to
+# prompt-injection filters (OpenRouter returned 403 "bracketed_role_spoofing" once
+# such notes piled up in a session).
 UNADDRESSED_NOTE = (
-    "[Overheard group message, not addressed to you. If it holds a clear decision or "
+    "Overheard group message, not addressed to you. If it holds a clear decision or "
     "commitment (a task, a date, something to buy), file it and answer exactly NOTED. "
     "If you are unsure what was meant, answer SAY: followed by one short question. "
-    "Otherwise answer exactly NO_REPLY.]"
+    "Otherwise answer exactly NO_REPLY. The message:"
 )
 
 
@@ -164,9 +169,12 @@ patch(
             "            if _gl_text in ('NOTED', 'NO_REPLY') and not msg.media:\n"
             "                _gl_target = _gl_merged[-1] if _gl_merged else msg.metadata.get('message_id')\n"
             "                if _gl_text == 'NOTED' and _gl_target:\n"
+            # NANOBOT_NOTED_EMOJI picks the reaction (default 👌). Telegram lists its
+            # reaction emoji without the U+FE0F variation selector, so strip it.
+            "                    _gl_emoji = (__import__('os').environ.get('NANOBOT_NOTED_EMOJI') or '\U0001F44C').replace('\ufe0f', '').strip() or '\U0001F44C'\n"
             "                    with suppress(ValueError):\n"
             "                        await self._add_reaction(\n"
-            "                            msg.chat_id, int(_gl_target), '\U0001F44C'\n"
+            "                            msg.chat_id, int(_gl_target), _gl_emoji\n"
             "                        )\n"
             "                return\n",
         ),
@@ -215,6 +223,14 @@ patch(
             "            _gl_say = _gl_final[:4].upper() == 'SAY:' and bool(_gl_final[4:].strip())\n"
             "            if _gl_say:\n"
             "                ctx.final_content = _gl_final[4:].strip()\n"
+            # Models often ask a clarifying question without the SAY: prefix; dropping
+            # it silently leaves the family waiting. Post a single short question too.
+            "            elif (\n"
+            "                _gl_final.endswith('?')\n"
+            "                and '\\n' not in _gl_final\n"
+            "                and len(_gl_final) <= 200\n"
+            "            ):\n"
+            "                _gl_say = True\n"
             "            if (\n"
             "                ctx.msg.metadata.get('addressed_to_bot') is False\n"
             "                and not _gl_merged\n"
