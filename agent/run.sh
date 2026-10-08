@@ -295,10 +295,10 @@ echo "[agent] Launching gateway(s)..."
 
 # Start each agent's gateway; collect PIDs for clean shutdown
 PIDS=()
-while IFS=$'\t' read -r SAFE_NAME PORT NOTED_EMOJI WAKE_WORDS; do
+while IFS=$'\t' read -r SAFE_NAME PORT NOTED_EMOJI VOICE_TX WAKE_WORDS; do
     CONFIG_PATH="/root/.nanobot-${SAFE_NAME}/config.json"
     echo "[agent] Starting '${SAFE_NAME}' on port ${PORT}${WAKE_WORDS:+ (wake words: ${WAKE_WORDS})}..."
-    NANOBOT_WAKE_WORDS="${WAKE_WORDS}" NANOBOT_NOTED_EMOJI="${NOTED_EMOJI}" nanobot gateway --config "${CONFIG_PATH}" &
+    NANOBOT_WAKE_WORDS="${WAKE_WORDS}" NANOBOT_NOTED_EMOJI="${NOTED_EMOJI}" NANOBOT_VOICE_TRANSCRIPTS="${VOICE_TX}" nanobot gateway --config "${CONFIG_PATH}" &
     PIDS+=($!)
 done < <(python3 - << 'PYEOF'
 import json, sys
@@ -309,10 +309,11 @@ for idx, a in enumerate(opts.get("agents", [])):
     name = a.get("name", f"agent{idx}").strip()
     safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in name)
     wake = ",".join(w.strip() for w in (a.get("telegram_wake_words") or "").replace("\t", " ").split(",") if w.strip())
-    # Emoji before wake words: bash read collapses empty tab-separated fields,
-    # and the emoji is never empty.
+    # Wake words last: bash read collapses empty tab-separated fields, and every
+    # field before them is never empty.
     emoji = (a.get("telegram_noted_emoji") or "").strip() or "\U0001F44C"
-    print(f"{safe}\t{BASE_PORT + idx}\t{emoji}\t{wake}")
+    voice_tx = "1" if a.get("telegram_voice_transcripts") else "0"
+    print(f"{safe}\t{BASE_PORT + idx}\t{emoji}\t{voice_tx}\t{wake}")
 PYEOF
 )
 

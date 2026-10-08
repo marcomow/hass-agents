@@ -144,6 +144,12 @@ configuration:
     description: >-
       Emoji the bot reacts with when it answers exactly NOTED (default 👌). Must be
       one of Telegram's standard reaction emoji, e.g. 👌 👍 ✍ 🫡.
+  agents_telegram_voice_transcripts:
+    name: Post voice transcripts
+    description: >-
+      Post the transcript of every voice message the agent receives as a quoted
+      reply, before the agent handles it. The agent then acts on the content as for
+      a text message. Needs a Groq API key for transcription.
   agents_show_system_messages:
     name: Show system messages in chat
     description: >-
