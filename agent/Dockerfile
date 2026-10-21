@@ -34,6 +34,10 @@ RUN python3 /tmp/topic_send.py && rm /tmp/topic_send.py
 COPY patches/system_messages.py /tmp/system_messages.py
 RUN python3 /tmp/system_messages.py && rm /tmp/system_messages.py
 
+# Patch nanobot so an agent repeating the same tool call is told to stop (loop guard)
+COPY patches/repeat_guard.py /tmp/repeat_guard.py
+RUN python3 /tmp/repeat_guard.py && rm /tmp/repeat_guard.py
+
 # Ensure the agent config directory exists
 RUN mkdir -p /root/.nanobot
 

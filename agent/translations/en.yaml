@@ -155,3 +155,10 @@ configuration:
     description: >-
       Post system notices such as "Compressing context…" and "Context compacted."
       in Telegram/Discord/Slack. Off by default; the WebUI always shows them.
+  agents_max_tool_iterations:
+    name: Max tool calls per message
+    description: >-
+      Upper limit on tool-call rounds the agent may run for one message before it
+      must answer (default 25; stock nanobot uses 200). Also, if the agent repeats
+      the exact same tool call three times in a row, it is told to stop and report
+      the error.
