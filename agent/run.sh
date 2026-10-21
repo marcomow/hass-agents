@@ -111,6 +111,11 @@ for idx, agent_opts in enumerate(agents):
     api_base      = agent_opts.get("api_base",     "").strip()
     groq_api_key  = agent_opts.get("groq_api_key", "").strip()
     system_prompt = agent_opts.get("system_prompt","").strip()
+    try:
+        max_tool_iterations = int(agent_opts.get("max_tool_iterations") or 25)
+    except (TypeError, ValueError):
+        max_tool_iterations = 25
+    max_tool_iterations = max(1, min(max_tool_iterations, 500))
 
     webui_port = WEBUI_BASE_PORT + idx
 
@@ -122,6 +127,9 @@ for idx, agent_opts in enumerate(agents):
                 "model":     model,
                 "workspace": workspace,
                 "timezone":  timezone,
+                # Stock nanobot allows 200 tool rounds per message; a model stuck
+                # repeating a failing call burns all of them. Cap it per agent.
+                "maxToolIterations": max_tool_iterations,
             }
         },
         "gateway":  {"port": port},

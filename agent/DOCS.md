@@ -108,6 +108,7 @@ You can define **multiple independent agent instances**, each with its own model
 | `telegram_noted_emoji` | No | `👌` | Reaction used when the agent answers exactly `NOTED`. Must be a standard Telegram reaction emoji (e.g. 👌 👍 ✍ 🫡) |
 | `telegram_voice_transcripts` | No | `false` | Post the transcript of every received voice message as a quoted reply (🎙 …), independently of the agent's answer, with the same 👀 / NOTED reactions as the voice message; the agent then acts on it like a text message. Needs `groq_api_key` |
 | `show_system_messages` | No | `false` | Post system notices such as "Compressing context…" / "Context compacted." in chat channels. The WebUI always shows them |
+| `max_tool_iterations` | No | `25` | Maximum tool-call rounds per message (1–500; stock nanobot uses 200). Independently, when the agent repeats the exact same tool call with the same arguments three times in a row, a note is added to the tool result telling it to stop and report the error |
 
 ---
 

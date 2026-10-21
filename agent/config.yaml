@@ -1,5 +1,5 @@
 name: "AI Agents"
-version: "0.5.27"
+version: "0.5.28"
 slug: agent
 description: >-
   Ultra-lightweight personal AI agents with multi-channel support (Telegram,
@@ -59,6 +59,7 @@ options:
       telegram_noted_emoji: "👌"
       telegram_voice_transcripts: false
       show_system_messages: false
+      max_tool_iterations: 25
 
 schema:
   timezone: str
@@ -94,4 +95,5 @@ schema:
       telegram_noted_emoji: "str?"
       telegram_voice_transcripts: "bool?"
       show_system_messages: "bool?"
+      max_tool_iterations: "int(1,500)?"
 
