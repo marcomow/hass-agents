@@ -12,11 +12,31 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Install the agent package
-RUN uv pip install --system --no-cache nanobot-ai==0.3.5
+RUN uv pip install --system --no-cache nanobot-ai==0.4.0
 
 # Patch nanobot WebUI for Home Assistant ingress (absolute → relative paths)
 COPY patches/ingress_fix.py /tmp/ingress_fix.py
 RUN python3 /tmp/ingress_fix.py && rm /tmp/ingress_fix.py
+
+# Patch nanobot so Telegram groups can be read quietly (telegram_group_mode: listen)
+COPY patches/group_listen.py /tmp/group_listen.py
+RUN python3 /tmp/group_listen.py && rm /tmp/group_listen.py
+
+# Patch nanobot so voice messages get their transcript posted as text (telegram_voice_transcripts)
+COPY patches/voice_transcript.py /tmp/voice_transcript.py
+RUN python3 /tmp/voice_transcript.py && rm /tmp/voice_transcript.py
+
+# Patch nanobot so the message tool can post into Telegram forum topics (<chat_id>:topic:<thread_id>)
+COPY patches/topic_send.py /tmp/topic_send.py
+RUN python3 /tmp/topic_send.py && rm /tmp/topic_send.py
+
+# Patch nanobot so context-compaction notices can be hidden per channel (show_system_messages)
+COPY patches/system_messages.py /tmp/system_messages.py
+RUN python3 /tmp/system_messages.py && rm /tmp/system_messages.py
+
+# Patch nanobot so an agent repeating the same tool call is told to stop (loop guard)
+COPY patches/repeat_guard.py /tmp/repeat_guard.py
+RUN python3 /tmp/repeat_guard.py && rm /tmp/repeat_guard.py
 
 # Ensure the agent config directory exists
 RUN mkdir -p /root/.nanobot
@@ -26,7 +46,7 @@ COPY run.sh /run.sh
 RUN chmod a+x /run.sh
 
 LABEL \
-    io.hass.version="0.3.5" \
+    io.hass.version="0.4.0" \
     io.hass.type="addon" \
     io.hass.arch="aarch64|amd64"
 
