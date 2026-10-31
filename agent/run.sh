@@ -111,6 +111,11 @@ for idx, agent_opts in enumerate(agents):
     api_base      = agent_opts.get("api_base",     "").strip()
     groq_api_key  = agent_opts.get("groq_api_key", "").strip()
     system_prompt = agent_opts.get("system_prompt","").strip()
+    try:
+        max_tool_iterations = int(agent_opts.get("max_tool_iterations") or 25)
+    except (TypeError, ValueError):
+        max_tool_iterations = 25
+    max_tool_iterations = max(1, min(max_tool_iterations, 500))
 
     webui_port = WEBUI_BASE_PORT + idx
 
@@ -122,6 +127,9 @@ for idx, agent_opts in enumerate(agents):
                 "model":     model,
                 "workspace": workspace,
                 "timezone":  timezone,
+                # Stock nanobot allows 200 tool rounds per message; a model stuck
+                # repeating a failing call burns all of them. Cap it per agent.
+                "maxToolIterations": max_tool_iterations,
             }
         },
         "gateway":  {"port": port},
@@ -131,7 +139,12 @@ for idx, agent_opts in enumerate(agents):
                 "host": "0.0.0.0",
                 "port": webui_port,
                 "tokenIssueSecret": token_issue_secret,
+                # The WebUI is a debugging surface: keep tool hints visible there.
+                "sendToolHints": True,
             },
+            # Chat channels (Telegram, Discord, Slack) inherit this: tool-call
+            # hints like `read_file("…")` are noise for end users, so off by default.
+            "sendToolHints": bool(agent_opts.get("show_tool_hints", False)),
         },
     }
 
@@ -156,6 +169,19 @@ for idx, agent_opts in enumerate(agents):
             "token":     telegram_token,
             "allowFrom": allow_from if allow_from else ["*"],
         }
+        # Groups: "mention" (default) = only @mentions / replies reach the agent.
+        # "listen" = read every group message, reply only when addressed
+        # (implemented by patches/group_listen.py on top of groupPolicy "open").
+        group_mode = (agent_opts.get("telegram_group_mode") or "mention").strip()
+        if group_mode == "listen":
+            config["channels"]["telegram"]["groupPolicy"] = "open"
+            # Streamed drafts would leak text before a suppressed reply is dropped.
+            config["channels"]["telegram"]["streaming"] = False
+            # With streaming off, the model's text before each tool call is sent
+            # as a progress message, and tool hints go out the same way; both
+            # would reach the group even when the final reply is suppressed.
+            config["channels"]["telegram"]["sendProgress"] = False
+            config["channels"]["telegram"]["sendToolHints"] = False
 
     # Discord
     discord_token = agent_opts.get("discord_token", "").strip()
@@ -226,9 +252,12 @@ for idx, agent_opts in enumerate(agents):
             url = (server.get("url") or "").strip()
             if url:
                 srv["url"] = url
+            headers = server.get("headers")
+            if isinstance(headers, dict) and headers:
+                srv["headers"] = {str(k): str(v) for k, v in headers.items()}
             api_key_mcp = (server.get("api_key") or "").strip()
             if api_key_mcp:
-                srv["headers"] = {"Authorization": f"Bearer {api_key_mcp}"}
+                srv.setdefault("headers", {})["Authorization"] = f"Bearer {api_key_mcp}"
             raw_tools = (server.get("enabled_tools") or "").strip()
             enabled_tools = [t.strip() for t in raw_tools.split(",") if t.strip()]
             if enabled_tools:
@@ -241,6 +270,14 @@ for idx, agent_opts in enumerate(agents):
             if "tools" not in config:
                 config["tools"] = {}
             config["tools"]["mcpServers"] = mcp_cfg
+
+    # System notices ("Compressing context…", "Context compacted."): the WebUI
+    # keeps them; chat channels only get them when show_system_messages is on.
+    # Implemented by patches/system_messages.py (per-channel sendSystemMessages).
+    show_system = bool(agent_opts.get("show_system_messages", False))
+    for ch_name, ch_cfg in config["channels"].items():
+        if isinstance(ch_cfg, dict):
+            ch_cfg["sendSystemMessages"] = True if ch_name == "websocket" else show_system
 
     config_path = os.path.join(config_dir, "config.json")
     with open(config_path, "w") as f:
@@ -266,10 +303,10 @@ echo "[agent] Launching gateway(s)..."
 
 # Start each agent's gateway; collect PIDs for clean shutdown
 PIDS=()
-while IFS=$'\t' read -r SAFE_NAME PORT; do
+while IFS=$'\t' read -r SAFE_NAME PORT NOTED_EMOJI VOICE_TX WAKE_WORDS; do
     CONFIG_PATH="/root/.nanobot-${SAFE_NAME}/config.json"
-    echo "[agent] Starting '${SAFE_NAME}' on port ${PORT}..."
-    nanobot gateway --config "${CONFIG_PATH}" &
+    echo "[agent] Starting '${SAFE_NAME}' on port ${PORT}${WAKE_WORDS:+ (wake words: ${WAKE_WORDS})}..."
+    NANOBOT_WAKE_WORDS="${WAKE_WORDS}" NANOBOT_NOTED_EMOJI="${NOTED_EMOJI}" NANOBOT_VOICE_TRANSCRIPTS="${VOICE_TX}" nanobot gateway --config "${CONFIG_PATH}" &
     PIDS+=($!)
 done < <(python3 - << 'PYEOF'
 import json, sys
@@ -279,7 +316,12 @@ opts = json.load(open("/data/options.json"))
 for idx, a in enumerate(opts.get("agents", [])):
     name = a.get("name", f"agent{idx}").strip()
     safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in name)
-    print(f"{safe}\t{BASE_PORT + idx}")
+    wake = ",".join(w.strip() for w in (a.get("telegram_wake_words") or "").replace("\t", " ").split(",") if w.strip())
+    # Wake words last: bash read collapses empty tab-separated fields, and every
+    # field before them is never empty.
+    emoji = (a.get("telegram_noted_emoji") or "").strip() or "\U0001F44C"
+    voice_tx = "1" if a.get("telegram_voice_transcripts") else "0"
+    print(f"{safe}\t{BASE_PORT + idx}\t{emoji}\t{voice_tx}\t{wake}")
 PYEOF
 )
 
