@@ -1,6 +1,6 @@
 """Patch nanobot so the agent can post into a Telegram forum topic.
 
-Stock nanobot 0.3.5 names a topic conversation ``telegram:<chat_id>:topic:<thread_id>``
+Stock nanobot (0.3.5+) names a topic conversation ``telegram:<chat_id>:topic:<thread_id>``
 (its session key), so a model asked to "post in the X topic" naturally calls the
 ``message`` tool with ``chat_id="<chat_id>:topic:<thread_id>"``. The Telegram
 channel then does ``int(msg.chat_id)``, logs "Invalid chat_id" and drops the
@@ -55,16 +55,14 @@ patch(
     [
         (
             "    async def send(self, msg: OutboundMessage) -> None:\n"
-            '        """Send a message through Telegram."""\n'
-            "        app = await self._wait_for_app()\n",
+            '        """Send a message through Telegram."""\n',
             "    async def send(self, msg: OutboundMessage) -> None:\n"
             '        """Send a message through Telegram."""\n'
             "        _ts_chat, _ts_sep, _ts_thread = str(msg.chat_id).partition(':topic:')\n"
             "        if _ts_sep and _ts_thread.isdigit():\n"
             "            msg.chat_id = _ts_chat\n"
             "            msg.metadata = dict(msg.metadata or {})\n"
-            "            msg.metadata['message_thread_id'] = int(_ts_thread)\n"
-            "        app = await self._wait_for_app()\n",
+            "            msg.metadata['message_thread_id'] = int(_ts_thread)\n",
         ),
     ],
 )
@@ -91,10 +89,10 @@ patch(
             "            chat_id = str(chat_id).strip()\n",
         ),
         (
-            '            "Do not set this to the current runtime chat for a normal reply."\n',
-            '            "Do not set this to the current runtime chat for a normal reply. "\n'
+            "        chat_id=StringSchema(\n",
+            "        chat_id=StringSchema(\n"
             "            \"Telegram forum topic: '<chat_id>:topic:<thread_id>' \"\n"
-            "            \"(a bare group chat_id posts in the General topic).\"\n",
+            "            \"(a bare group chat_id posts in the General topic). \"\n",
         ),
     ],
 )
