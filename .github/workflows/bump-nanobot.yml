@@ -41,8 +41,10 @@ jobs:
           PYTHONPATH="$work/pkg" python3 agent/patches/ingress_fix.py 2>&1 | tee "$work/log" || status=failed
           grep -q "hassio_ingress" "$work/pkg/nanobot/web/dist/index.html" || status=failed
           grep -q "X-Ingress-Path" "$work/pkg/nanobot/webui/ws_http.py" || status=failed
-          PYTHONPATH="$work/pkg" python3 agent/patches/group_listen.py 2>&1 | tee -a "$work/log" || status=failed
-          PYTHONPATH="$work/pkg" python3 agent/patches/system_messages.py 2>&1 | tee -a "$work/log" || status=failed
+          # Every other patch the Dockerfile applies, in the same order.
+          for patch in $(grep -oP '^COPY patches/\K[a-z_]+\.py' agent/Dockerfile | grep -vx ingress_fix.py); do
+            PYTHONPATH="$work/pkg" python3 "agent/patches/$patch" 2>&1 | tee -a "$work/log" || status=failed
+          done
           echo "status=$status" >> "$GITHUB_OUTPUT"
           {
             echo 'log<<EOF'
