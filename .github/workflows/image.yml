@@ -1,0 +1,35 @@
+name: Publish standalone image
+
+# Builds the agent add-on image for the portable stack (marcomow/home-agents-stack)
+# and publishes it to GHCR for amd64 and arm64, so hosts pull instead of build.
+on:
+  push:
+    branches: [main, portable-stack]
+    paths: ["agent/**", ".github/workflows/image.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: agent
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/hass-agents:${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
+            ghcr.io/${{ github.repository_owner }}/hass-agents:sha-${{ github.sha }}
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
