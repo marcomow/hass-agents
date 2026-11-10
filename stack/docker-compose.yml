@@ -1,0 +1,89 @@
+# Portable family-agents stack: Carson (nanobot), Yuvomi, Cloudflare tunnel.
+#
+# Everything that makes this install "yours" lives in two places:
+#   .env          - secrets and settings (never committed)
+#   ./data/       - all state: Yuvomi DB + documents + backups, agent memory,
+#                   sessions, cron jobs
+# Move = stop here, copy .env + ./data, start there. See README.md.
+#
+# Runs on amd64 (VPS, mini PC) and arm64 (Pi, phone): images are built on the
+# host from the add-on repos, so no registry is needed.
+
+name: family-agents
+
+x-restart: &restart
+  restart: unless-stopped
+
+networks:
+  agents:
+    ipam:
+      config:
+        # Fixed subnet so the agents' SSRF guard can be told Yuvomi is allowed.
+        - subnet: ${AGENTS_SUBNET:-172.28.0.0/24}
+
+services:
+  yuvomi:
+    <<: *restart
+    profiles: ["yuvomi"]
+    build:
+      context: ${YUVOMI_BUILD_CONTEXT:-https://github.com/marcomow/yuvomi-ha.git#claude/home-assistant-yuvomi-addon-dfk7v7:yuvomi}
+    image: family-agents/yuvomi:local
+    # Options arrive base64-encoded from .env so a host needs no extra files;
+    # if the variable is empty, an existing ./data/yuvomi/options.json is kept.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        if [ -n "$$YUVOMI_OPTIONS_B64" ]; then
+          echo "$$YUVOMI_OPTIONS_B64" | base64 -d > /data/options.json
+        fi
+        exec /run.sh
+    environment:
+      YUVOMI_OPTIONS_B64: ${YUVOMI_OPTIONS_B64:-}
+    volumes:
+      - ./data/yuvomi:/data
+      - ./data/yuvomi-share:/share/yuvomi
+    ports:
+      # Local only; the public side goes through the tunnel.
+      - "127.0.0.1:${YUVOMI_PORT:-3000}:3000"
+    networks: [agents]
+
+  agents:
+    <<: *restart
+    profiles: ["agents"]
+    build:
+      context: ${AGENTS_BUILD_CONTEXT:-https://github.com/marcomow/hass-agents.git#portable-stack:agent}
+    image: family-agents/agents:local
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        if [ -n "$$AGENTS_OPTIONS_B64" ]; then
+          echo "$$AGENTS_OPTIONS_B64" | base64 -d > /data/options.json
+        fi
+        exec /run.sh
+    environment:
+      AGENTS_OPTIONS_B64: ${AGENTS_OPTIONS_B64:-}
+      # Keep config, sessions, cron and WebUI state in ./data, not the container.
+      NANOBOT_STATE_ROOT: /data
+      # Home Assistant's MCP endpoint, reachable from wherever this runs.
+      HA_MCP_URL: ${HA_MCP_URL:-}
+      SSRF_WHITELIST: ${AGENTS_SUBNET:-172.28.0.0/24}
+    volumes:
+      - ./data/agents:/data
+    ports:
+      # WebUI of the first agent, local only (use an SSH tunnel to open it).
+      - "127.0.0.1:${AGENTS_WEBUI_PORT:-8765}:8765"
+    networks: [agents]
+
+  cloudflared:
+    <<: *restart
+    profiles: ["tunnel"]
+    image: cloudflare/cloudflared:latest
+    # Remotely managed tunnel: routes (family.kolombo.lv -> http://yuvomi:3000)
+    # live in Cloudflare, so the same token works on any host.
+    # Only ONE host may run this at a time.
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CF_TUNNEL_TOKEN:-}
+    networks: [agents]

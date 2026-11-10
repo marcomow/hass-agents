@@ -19,6 +19,12 @@ WEBUI_BASE_PORT = 8765
 # Internal Supervisor network (Supervisor, HA Core, other add-ons). nanobot blocks
 # private ranges by default (SSRF guard), which would reject these hosts.
 HASSIO_NETWORK = "172.30.32.0/23"
+# Standalone (non-add-on) runs: extra private ranges the agents may reach,
+# e.g. the Docker network Yuvomi sits on. Comma-separated CIDRs.
+EXTRA_SSRF = [c.strip() for c in os.environ.get("SSRF_WHITELIST", "").split(",") if c.strip()]
+# Where per-agent config, sessions, cron and WebUI state live. The add-on keeps
+# the historical /root; the portable stack sets /data so they persist.
+STATE_ROOT = os.environ.get("NANOBOT_STATE_ROOT", "/root").rstrip("/") or "/root"
 
 try:
     with open(OPTIONS_PATH) as f:
@@ -50,7 +56,10 @@ ha_opts = opts.get("home_assistant") or {}
 if ha_opts.get("enabled"):
     user_token = (ha_opts.get("token") or "").strip()
     if user_token:
-        ha_url, ha_token = "http://homeassistant:8123/api/mcp", user_token
+        # HA_MCP_URL lets a standalone install point at HA from anywhere
+        # (e.g. https://<nabu-casa-or-own-domain>/api/mcp).
+        ha_url = os.environ.get("HA_MCP_URL", "").strip() or "http://homeassistant:8123/api/mcp"
+        ha_token = user_token
     else:
         ha_url, ha_token = "http://supervisor/core/api/mcp", os.environ.get("SUPERVISOR_TOKEN", "")
     if not ha_token:
@@ -98,7 +107,7 @@ for idx, agent_opts in enumerate(agents):
     name = agent_opts.get("name", f"agent{idx}").strip()
     safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in name)
 
-    config_dir = f"/root/.nanobot-{safe_name}"
+    config_dir = f"{STATE_ROOT}/.nanobot-{safe_name}"
     workspace  = f"/data/workspace-{safe_name}"
     port       = BASE_PORT + idx
 
@@ -210,7 +219,7 @@ for idx, agent_opts in enumerate(agents):
             search_cfg["apiKey"] = search_api_key
         config["tools"] = {"web": {"search": search_cfg}}
 
-    config.setdefault("tools", {})["ssrfWhitelist"] = [HASSIO_NETWORK]
+    config.setdefault("tools", {})["ssrfWhitelist"] = [HASSIO_NETWORK] + EXTRA_SSRF
 
     # MCP servers: filter global list by agent's mcp_server_names (empty = all), then merge JSON override
     allowed = [n.strip() for n in (agent_opts.get("mcp_server_names") or "").split(",") if n.strip()]
@@ -304,7 +313,7 @@ echo "[agent] Launching gateway(s)..."
 # Start each agent's gateway; collect PIDs for clean shutdown
 PIDS=()
 while IFS=$'\t' read -r SAFE_NAME PORT NOTED_EMOJI VOICE_TX WAKE_WORDS; do
-    CONFIG_PATH="/root/.nanobot-${SAFE_NAME}/config.json"
+    CONFIG_PATH="${NANOBOT_STATE_ROOT:-/root}/.nanobot-${SAFE_NAME}/config.json"
     echo "[agent] Starting '${SAFE_NAME}' on port ${PORT}${WAKE_WORDS:+ (wake words: ${WAKE_WORDS})}..."
     NANOBOT_WAKE_WORDS="${WAKE_WORDS}" NANOBOT_NOTED_EMOJI="${NOTED_EMOJI}" NANOBOT_VOICE_TRANSCRIPTS="${VOICE_TX}" nanobot gateway --config "${CONFIG_PATH}" &
     PIDS+=($!)

@@ -1,1 +1,5 @@
 .env
+# portable stack: secrets and state never go to Git
+stack/.env
+stack/data/
+stack/family-agents-*.tar.gz
