@@ -38,6 +38,10 @@ RUN python3 /tmp/system_messages.py && rm /tmp/system_messages.py
 COPY patches/repeat_guard.py /tmp/repeat_guard.py
 RUN python3 /tmp/repeat_guard.py && rm /tmp/repeat_guard.py
 
+# Patch nanobot's cron tool so reminders still get created when a model drops or misnames the message
+COPY patches/cron_args.py /tmp/cron_args.py
+RUN python3 /tmp/cron_args.py && rm /tmp/cron_args.py
+
 # Ensure the agent config directory exists
 RUN mkdir -p /root/.nanobot
 
