@@ -11,7 +11,9 @@ After this patch the cron tool, for action="add" only:
 
 * takes the reminder text from ``message`` or, failing that, from a common
   alias the model may have used (text, content, reminder, prompt, task,
-  instruction, description, body, note), or from ``name``;
+  instruction, description, body, note), or from ``name`` / ``job_id`` - a
+  slug label is turned into a short "Reminder: ..." instruction, so a model that
+  never sends the text still gets its reminder;
 * treats ``job_id`` as the label (``name``) instead of an error;
 * drops fields that make no sense for add (``limit``, ``include_disabled``,
   ``job_id``) and any unknown keys, so execute() never gets stray kwargs;
@@ -76,10 +78,18 @@ NORMALIZE = '''    _ADD_TEXT_ALIASES = (
             params["name"] = job_id.strip()
         if not message:
             name = str(params.get("name") or "").strip()
-            # A label like "candele-storm-2026-11-17" is not a reminder text;
-            # only use name when it reads like a sentence.
-            if name and " " in name:
-                message = name
+            # Last resort: some routed models never send the text, however the
+            # error is worded (seen 19 Nov 2026: the label went in job_id, then
+            # three identical retries without it). A label such as
+            # "pabalsts-kalla-decisione-2026-12-20" still tells the agent what
+            # the reminder is about when the job fires in the same chat, so
+            # turn it into a short instruction instead of failing.
+            if name:
+                label = name if " " in name else name.replace("-", " ").replace("_", " ")
+                message = (
+                    f"Reminder: {label}. Check this chat and the related "
+                    "Yuvomi tasks for the details, then remind the user."
+                )
         if message:
             params["message"] = message
         else:
