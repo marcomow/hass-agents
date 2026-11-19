@@ -42,6 +42,10 @@ RUN python3 /tmp/repeat_guard.py && rm /tmp/repeat_guard.py
 COPY patches/cron_args.py /tmp/cron_args.py
 RUN python3 /tmp/cron_args.py && rm /tmp/cron_args.py
 
+# Patch nanobot so each LLM reply logs the model that actually served it (openrouter/auto)
+COPY patches/model_log.py /tmp/model_log.py
+RUN python3 /tmp/model_log.py && rm /tmp/model_log.py
+
 # Ensure the agent config directory exists
 RUN mkdir -p /root/.nanobot
 
